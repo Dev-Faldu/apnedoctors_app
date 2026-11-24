@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:apnedoctors/features/launch/launch_gate.dart';
 import 'package:apnedoctors/features/launch/launch_store.dart';
 import 'package:apnedoctors/features/opening/opening_screen.dart';
+import 'package:apnedoctors/features/welcome/doctors_online.dart';
 import 'package:apnedoctors/features/welcome/welcome_host.dart';
 
 import '../support/fonts.dart';
@@ -27,7 +28,12 @@ void main() {
   Widget gate(LaunchKind kind, {bool reduced = false}) => phone(
     const LaunchGate(),
     reducedMotion: reduced,
-    overrides: [launchKindProvider.overrideWithValue(kind), launchStoreProvider.overrideWithValue(MemoryLaunchStore())],
+    overrides: [
+      launchKindProvider.overrideWithValue(kind),
+      launchStoreProvider.overrideWithValue(MemoryLaunchStore()),
+      // nobody online: what the live project answers today
+      doctorsOnlineProvider.overrideWith((ref) => Stream.value(DoctorsOnline.fromJson({'count': 0, 'faces': []}))),
+    ],
   );
 
   testWidgets('EC-LAUNCH-01: the first open plays the full opening', (tester) async {

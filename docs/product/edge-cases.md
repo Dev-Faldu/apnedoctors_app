@@ -12,7 +12,8 @@ and tested. `[x]` handled and tested · `[~]` partly · `[ ]` open.
 - [x] 07 **Reduced motion on** → no opening; Welcome's settled frame, nothing loops. (`launch_test.dart`)
 - [x] 08 **Custom font fails** → fonts are bundled, nothing is fetched at runtime; the system font is the fallback.
 - [ ] 09 **Low-end Android (2 GB RAM)** → opening stays smooth; profile on a real device.
-- [ ] 11 **Very slow network** → the opening never waits for the network (true today; keep it so).
+- [x] 11 **Slow or no network at launch** → nothing waits for the network: the backend starts from local storage,
+  the doctors count arrives when it can; offline means no chip, no error. (`test/features/doctors_online_test.dart`)
 - [x] 12 **Backgrounded mid-opening** → finishes instantly on return; no frozen half-states.
   (`test/features/opening_screen_test.dart`)
 - [ ] 13 **Cold start from a push** → skip the long opening (needs push).
@@ -28,6 +29,25 @@ and tested. `[x]` handled and tested · `[~]` partly · `[ ]` open.
 - [x] 04 **Touch targets** → at least 48 × 48. (`opening_screen_test.dart`)
 - [x] 05 **Small phones** → checked at 320×568 and 360×640; the buttons stay visible.
 
-## 3. Content honesty (EC-COPY)
-- [x] 01 **No made-up numbers** → the "doctors online" chip shows only a real count above zero.
-  (`opening_screen_test.dart`)
+## 3. Backend and infrastructure (EC-INFRA)
+- [x] 01 **Backend unreachable after a count was shown** → the last count stays up to 2 minutes (a doctor's
+  presence lasts that long), then the chip goes away. (`doctors_online_test.dart`)
+- [x] 02 **Live data changes mid-animation** → the chip never appears or vanishes during the hand-off; after Welcome
+  settles it slides in or out. (`opening_screen_test.dart`)
+- [x] 03 **Shipped migration edited** → `supabase/deploy.py` refuses to run; add a new migration instead.
+- [ ] 04 **Supabase outage during sign-in** → (with sign-in).
+
+## 4. Security (EC-SEC)
+- [x] 01 **Every table has row-level security**, checked in tests and on the live project.
+- [x] 02 **The public can run only `doctors_online()`**; signed-in people also `set_doctor_presence()`, which
+  refuses anyone who is not a verified doctor. (`supabase/tests/test_database.py`, live check)
+- [x] 03 **Internals stay internal**: the `private` schema is closed; Supabase's `rls_auto_enable()` is not callable.
+- [x] 04 **Nobody outside the server writes doctors or presence** (anon and signed-in both refused; live too).
+- [x] 05 **The doctors directory is not public**: only a doctor's own entry is readable, by that doctor.
+- [x] 06 **No account door the product didn't choose**: email sign-up and anonymous accounts are off (live check).
+- [x] 07 **No secrets in the repo**: only the public URL and publishable key; the access token lives in the cloud
+  environment's network secrets.
+
+## 5. Content honesty (EC-COPY)
+- [x] 01 **No made-up numbers** → the "doctors online" chip shows only a real, live count of verified doctors
+  above zero, from the backend. (`opening_screen_test.dart`, `doctors_online_test.dart`, `test_database.py`)

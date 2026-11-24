@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app.dart';
+import 'core/backend/backend.dart';
 import 'core/theme/tokens.dart';
 import 'features/launch/launch_store.dart';
 
@@ -29,6 +30,7 @@ Future<void> main() async {
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   }
 
+  await connectBackend();
   final store = PrefsLaunchStore(await SharedPreferences.getInstance());
   final kind = store.openedBefore ? LaunchKind.returning : LaunchKind.firstOpen;
   if (kind == LaunchKind.firstOpen) await store.markOpened(); // EC-LAUNCH-04

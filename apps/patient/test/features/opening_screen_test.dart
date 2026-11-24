@@ -81,6 +81,43 @@ void main() {
     expect((started, signIn, pro), (1, 1, 1));
   });
 
+  testWidgets('the doctors chip never pops in while the a glides into the doorway', (tester) async {
+    setPhone(tester, const Size(390, 844));
+    Widget app(DoctorsOnline? d) => phone(OpeningScreen(doctorsOnline: d));
+    await tester.pumpWidget(app(null));
+    await run(tester, 6.2); // hand-off under way
+    await tester.pumpWidget(app(boardDoctorsOnline));
+    await run(tester, 1.0);
+    expect(find.text('14 doctors online now'), findsNothing, reason: 'held until Welcome settles');
+    await run(tester, 2.9); // Welcome settles at 9.9 s; this is 0.2 s after
+    final mid = tester.getSize(find.byType(AnimatedSize)).height;
+    expect(mid, inExclusiveRange(1, 56), reason: 'sliding in, not popping');
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('14 doctors online now'), findsOneWidget);
+    expect(tester.getSize(find.byType(AnimatedSize)).height, 56);
+  });
+
+  testWidgets('a count that arrives before the hand-off is there from the start', (tester) async {
+    setPhone(tester, const Size(390, 844));
+    await tester.pumpWidget(phone(const OpeningScreen()));
+    await run(tester, 2);
+    await tester.pumpWidget(phone(const OpeningScreen(doctorsOnline: boardDoctorsOnline)));
+    await run(tester, 8.5);
+    expect(find.text('14 doctors online now'), findsOneWidget);
+  });
+
+  testWidgets('if everyone goes offline mid hand-off, the chip leaves after Welcome settles', (tester) async {
+    setPhone(tester, const Size(390, 844));
+    await tester.pumpWidget(phone(const OpeningScreen(doctorsOnline: boardDoctorsOnline)));
+    await run(tester, 6.5);
+    await tester.pumpWidget(phone(const OpeningScreen()));
+    await run(tester, 1.0);
+    expect(find.text('14 doctors online now'), findsOneWidget, reason: 'held');
+    await run(tester, 3.0);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('14 doctors online now'), findsNothing);
+  });
+
   testWidgets('no made-up numbers: the doctors chip only shows with real data', (tester) async {
     setPhone(tester, const Size(390, 844));
     await tester.pumpWidget(phone(const WelcomeHost(reduced: true)));

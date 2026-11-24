@@ -8,6 +8,7 @@ import '../welcome/doorway_painter.dart';
 import '../welcome/welcome_screen.dart';
 import '../welcome/welcome_timings.dart';
 import 'opening_choreography.dart';
+import 'opening_spec.g.dart';
 import 'splash_painter.dart';
 
 /// The first open: native splash → splash (the a, the alpana, the name writing itself) → hand-off
@@ -54,6 +55,20 @@ class OpeningScreenState extends State<OpeningScreen> with SingleTickerProviderS
 
   static const settled = OpeningChoreography.settled;
 
+  // While the a glides into the doorway (hand-off until settled), the doctors chip may update its
+  // number but never appear or vanish: that would move the doorway under the a. Such a change waits
+  // until Welcome has settled, then slides in or out.
+  bool _holding = false;
+  DoctorsOnline? _held;
+
+  static bool _hasChip(DoctorsOnline? d) => d != null && d.count > 0;
+
+  DoctorsOnline? get _online {
+    final live = widget.doctorsOnline;
+    if (!_holding || _hasChip(live) == _hasChip(_held)) return live;
+    return _held;
+  }
+
   /// Current time on the opening clock (s).
   @visibleForTesting
   double get time => _time.value;
@@ -86,6 +101,14 @@ class OpeningScreenState extends State<OpeningScreen> with SingleTickerProviderS
       _rate = 1;
     }
     _time.value = t;
+    if (!_holding && !_settledFired && t >= OpeningSpec.handoff && t < settled) {
+      setState(() {
+        _holding = true;
+        _held = widget.doctorsOnline;
+      });
+    } else if (_holding && t >= settled) {
+      setState(() => _holding = false);
+    }
     if (!_settledFired && t >= settled) {
       _settledFired = true;
       widget.onSettled?.call();
@@ -148,7 +171,7 @@ class OpeningScreenState extends State<OpeningScreen> with SingleTickerProviderS
                   timings: WelcomeTimings.handoff,
                   heroOffset: c.heroOffset,
                   heroKey: _heroKey,
-                  doctorsOnline: widget.doctorsOnline,
+                  doctorsOnline: _online,
                   onGetStarted: widget.onGetStarted,
                   onSignIn: widget.onSignIn,
                   onForDoctors: widget.onForDoctors,

@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The app talks to ApneDoctors' backend (Supabase). Debug builds get this by default; release needs it. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="apnedoctors"
+        android:label="ApneDoctors"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity

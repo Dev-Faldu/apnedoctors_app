@@ -17,7 +17,7 @@ class LaunchGate extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final kind = ref.watch(launchKindProvider);
-    final online = ref.watch(doctorsOnlineProvider);
+    final online = ref.watch(doctorsOnlineProvider).value;
     final reduced = MediaQuery.disableAnimationsOf(context);
     if (reduced) return WelcomeHost(reduced: true, doctorsOnline: online);
     return switch (kind) {

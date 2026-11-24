@@ -22,6 +22,16 @@ flutter test                # logic, layout and golden tests
 Goldens are rendered on Linux (the CI platform). After an approved design change:
 `flutter test --update-goldens test/goldens`, then look at every changed image before committing.
 
+## Backend
+
+`lib/core/backend/backend.dart` starts Supabase at launch (local only, never waits on the network) and exposes
+`supabaseProvider`. Features read live data through small sources (e.g. `DoctorsOnlineSource` calls
+`public.doctors_online()`). Live tests run the app's own code against the real project:
+
+```bash
+flutter test --dart-define=LIVE=true test/live
+```
+
 ## Layout
 
 ```

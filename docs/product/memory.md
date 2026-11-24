@@ -3,7 +3,34 @@
 Read this at the start of every session. Newest sections first; they win over anything below them.
 Keep it current: when a decision changes, change it here in the same commit.
 
-Last updated: 2026-11-24.
+Last updated: 2026-11-24 (backend connected).
+
+## Backend connected for real (founder: "connect it, no fake, no mock, no dummy", 2026-11-24)
+- The app talks to the live Supabase project `yljfnbudjdijwjshqaba` (ap-south-1, Mumbai; Postgres 17):
+  `supabase_flutter` starts at launch without waiting for the network.
+- Database, in `supabase/migrations/` (append-only), applied with `supabase/deploy.py` through the Management API
+  (tracked in `supabase_migrations.schema_migrations`, the Supabase CLI's table):
+  - `doctors`: the verified directory (name, 14-digit ABDM HPR ID, `verified_at`; rows added and verified by the
+    verification process only, never by the app);
+  - `doctor_presence`: a verified doctor's last "I'm here"; online = seen in the last 2 minutes;
+  - `doctors_online()`: public, returns `{count, faces[≤3 initials]}` of verified doctors online now;
+  - `set_doctor_presence(online)`: signed-in verified doctors only.
+  RLS on every table; the public can run only `doctors_online`; the `private` schema is closed; Supabase's own
+  `rls_auto_enable()` helper is closed to the public (its trigger still enables RLS on new tables).
+- Welcome's "doctors online" chip now reads the real count every 30 s. Today the answer is
+  `{"count": 0, "faces": []}` (no verified doctors yet), so the chip is hidden. It appears by itself when real
+  verified doctors go online. A count is trusted for 2 minutes; if the backend can't be reached for longer, the
+  chip goes away. During the hand-off the chip can't appear or vanish (the doorway would move); afterwards it slides.
+- Auth: email sign-up turned off (decided methods are phone and Google; an open email sign-up let anyone make
+  accounts with the public key). Anonymous accounts off. Google and phone sign-in are not set up yet.
+- Verified three ways: 15 database tests on Supabase's own Postgres 17 image (`supabase/tests/test_database.py`),
+  live checks against the real project (`supabase/tests/live_check.py`: public can count, can't read or write the
+  directory, RLS everywhere, migrations applied, security advisor clean of errors, auth methods), and the app's own
+  Dart code against the real project (`apps/patient/test/live`).
+- Cloud environment "ApneDoctors" (personal) allows `yljfnbudjdijwjshqaba.supabase.co` and `api.supabase.com`; the
+  Supabase access token is a network secret on that environment (never in the repo or chat). The token pasted in chat
+  on 2026-11-24 must be revoked.
+- App name under the icon is "ApneDoctors" on both platforms; Android release builds declare INTERNET.
 
 ## Milestone 1 built: first tap → native splash → opening → Welcome (2026-11-24, awaiting the founder's review)
 - Fresh start (founder: "start fresh, from when someone first downloads the app and clicks the icon").
@@ -78,6 +105,7 @@ Last updated: 2026-11-24.
 
 ## Open questions for the founder
 - Approve milestone 1 (videos in the session) and the six deliberate differences above.
-- Where "Get started" goes next: sign-in design (phone OTP needs an SMS budget).
-- Source of the live "doctors online" count (needs the doctor directory in Supabase).
+- Sign-in, next: Google needs a Google Cloud OAuth client (free; the founder creates it and shares the client IDs);
+  phone OTP needs a paid SMS provider. Google only first, or both?
+- How doctors get verified (HPR check, who approves) before any doctor can appear online.
 - Connect a Mac to record iOS simulator videos?

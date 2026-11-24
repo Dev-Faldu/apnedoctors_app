@@ -18,6 +18,7 @@ medicines, lab tests, admission → records → follow-up, for yourself and your
 | Path | What lives there |
 |---|---|
 | `apps/patient/` | The patient app (Flutter, iOS + Android). How to run and test: [`apps/patient/CLAUDE.md`](apps/patient/CLAUDE.md). |
+| `supabase/` | Database: `migrations/` (append-only), `deploy.py` (applies them to the live project), `tests/`. |
 | `docs/design/kalighat-pop/` | Design boards (HTML, they animate) and their generators. The source of truth for look and motion. |
 | `docs/product/` | Memory, edge cases, screen map. |
 
@@ -47,6 +48,19 @@ The legacy Expo app and the old Supabase project live in `Dev-Faldu/apnedoctors-
 **Code**
 - Every change comes with tests; `flutter analyze` clean; goldens for every screen at 360×640 and 390×844.
 - Copy is short, friendly and accurate. Errors tell people what to do next.
+
+## Database (Supabase project `yljfnbudjdijwjshqaba`, ap-south-1)
+
+```bash
+docker run -d --name adpg -e POSTGRES_PASSWORD=postgres -p 54322:5432 supabase/postgres:17.6.1.054
+python3 -m unittest discover -s supabase/tests -v          # every migration, as the real roles
+SUPABASE_ACCESS_TOKEN=<token> python3 supabase/deploy.py    # apply new migrations to the live project
+SUPABASE_ACCESS_TOKEN=<token> python3 supabase/tests/live_check.py
+```
+
+In the "ApneDoctors" cloud environment the token is a network secret: use `SUPABASE_ACCESS_TOKEN=proxy-injected`.
+Never edit a shipped migration; add a new one. Every new table: RLS on, explicit grants, tests in
+`supabase/tests/test_database.py`, and a line in `live_check.py` when it changes what the public can do.
 
 ## Git
 - This repo: `Dev-Faldu/apnedoctors_app`. Work happens on `flutter-v1` until the founder says otherwise.

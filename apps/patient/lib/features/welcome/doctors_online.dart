@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../core/backend/backend.dart';
 import '../../core/motion/keyframes.dart';
 import '../../core/theme/tokens.dart';
 
@@ -15,11 +18,80 @@ class DoctorsOnline {
 
   /// Up to three doctors to show on the chip: initials and a tint.
   final List<({String initials, Color tint})> faces;
+
+  static const _tints = [AdColors.avatarIndigo, AdColors.avatarRose, AdColors.avatarLeaf];
+
+  /// Reads the backend's answer (`public.doctors_online()`): `{"count": n, "faces": [{"id", "initials"}]}`.
+  /// Null when nobody is online, so nothing is shown.
+  static DoctorsOnline? fromJson(Object? json) {
+    if (json is! Map) throw FormatException('doctors_online: expected an object, got $json');
+    final count = json['count'];
+    final faces = json['faces'];
+    if (count is! int || faces is! List) throw FormatException('doctors_online: bad shape $json');
+    if (count <= 0) return null;
+    return DoctorsOnline(
+      count: count,
+      faces: [
+        for (final (i, f) in faces.take(3).indexed)
+          if (f is Map && f['initials'] is String && (f['initials'] as String).isNotEmpty)
+            (initials: f['initials'] as String, tint: _tints[i % _tints.length]),
+      ],
+    );
+  }
+
+  @override
+  bool operator ==(Object other) => other is DoctorsOnline && other.count == count && listEquals(other.faces, faces);
+
+  @override
+  int get hashCode => Object.hash(count, Object.hashAll(faces));
 }
 
-/// Live count of verified doctors online. Null until the backend provides it (no doctor directory
-/// exists yet), so the chip stays hidden.
-final doctorsOnlineProvider = Provider<DoctorsOnline?>((ref) => null);
+/// Asks the backend how many verified doctors are online now.
+class DoctorsOnlineSource {
+  DoctorsOnlineSource(this._client);
+  final SupabaseClient _client;
+
+  Future<DoctorsOnline?> fetch() async =>
+      DoctorsOnline.fromJson(await _client.rpc('doctors_online').timeout(const Duration(seconds: 8)));
+}
+
+final doctorsOnlineSourceProvider = Provider<DoctorsOnlineSource>(
+  (ref) => DoctorsOnlineSource(ref.watch(supabaseProvider)),
+);
+
+/// The live count while Welcome is on screen, refreshed every [refreshEvery].
+///
+/// A doctor counts as online for 2 minutes after their last "I'm here", so a known count stays good
+/// for that long. If the backend can't be reached for longer, the chip goes away rather than show
+/// a number nobody can vouch for. Offline at launch: no chip, no error, nothing waits (EC-LAUNCH-11).
+final doctorsOnlineProvider = StreamProvider.autoDispose<DoctorsOnline?>((ref) {
+  final source = ref.watch(doctorsOnlineSourceProvider);
+  return watchDoctorsOnline(source.fetch);
+});
+
+const refreshEvery = Duration(seconds: 30);
+const trustFor = Duration(minutes: 2);
+
+/// The polling behind [doctorsOnlineProvider], separated so it can be tested with real timing.
+Stream<DoctorsOnline?> watchDoctorsOnline(
+  Future<DoctorsOnline?> Function() fetch, {
+  Duration every = refreshEvery,
+  Duration keep = trustFor,
+  DateTime Function() now = DateTime.now,
+}) async* {
+  DateTime? lastGood;
+  while (true) {
+    try {
+      final online = await fetch();
+      lastGood = now();
+      yield online;
+    } catch (e) {
+      debugPrint('doctors_online: $e');
+      if (lastGood == null || now().difference(lastGood) > keep) yield null;
+    }
+    await Future<void>.delayed(every);
+  }
+}
 
 /// "14 doctors online now": white pill with doctors' faces and a live green dot.
 class DoctorsOnlineChip extends StatelessWidget {
@@ -123,7 +195,8 @@ class _LiveDot extends CustomPainter {
   bool shouldRepaint(_LiveDot old) => old.reduced != reduced || old.time != time;
 }
 
-/// Kept for previews and tests that show the chip as the board does.
+/// The board's example (14 doctors, AR/KM/SN). Only for tests that compare the chip with the board;
+/// the app never shows it.
 const boardDoctorsOnline = DoctorsOnline(
   count: 14,
   faces: [

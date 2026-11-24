@@ -128,10 +128,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 ),
                 w.riseLede,
               ),
-              if (widget.doctorsOnline != null && widget.doctorsOnline!.count > 0) ...[
-                const SizedBox(height: 16),
-                rise(DoctorsOnlineChip(online: widget.doctorsOnline!, time: t, reduced: reduced), w.riseOnline),
-              ],
+              // The live count comes and goes smoothly once Welcome is on screen; before that (and
+              // with reduced motion) it simply is there or not.
+              _ChipSlot(
+                animate: !reduced && !(w.fromSplash && t.value < w.settled),
+                child: widget.doctorsOnline != null && widget.doctorsOnline!.count > 0
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: rise(
+                          DoctorsOnlineChip(online: widget.doctorsOnline!, time: t, reduced: reduced),
+                          w.riseOnline,
+                        ),
+                      )
+                    : const SizedBox(width: double.infinity),
+              ),
             ],
           ),
         );
@@ -213,6 +223,25 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Holds the doctors chip. Changes slide (450 ms) once Welcome is on screen; before that, and with
+/// reduced motion, they land on the next frame. (One animator throughout, so the first change after
+/// the hand-off slides too. A zero duration would re-layout inside layout, hence one microsecond.)
+class _ChipSlot extends StatelessWidget {
+  const _ChipSlot({required this.animate, required this.child});
+  final bool animate;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: animate ? const Duration(milliseconds: 450) : const Duration(microseconds: 1),
+      curve: Curves.easeInOutCubic,
+      alignment: Alignment.topLeft,
+      child: child,
     );
   }
 }
