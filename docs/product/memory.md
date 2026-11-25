@@ -3,7 +3,42 @@
 Read this at the start of every session. Newest sections first; they win over anything below them.
 Keep it current: when a decision changes, change it here in the same commit.
 
-Last updated: 2026-11-24 (backend connected).
+Last updated: 2026-11-25 (getting-in foundations built).
+
+## Getting in: decisions before the build (founder, 2026-11-24, newest)
+- Stay in `Dev-Faldu/apnedoctors_app` and Supabase project `yljfnbudjdijwjshqaba`. The old repo `apnedoctors-app`
+  keeps design history and docs only.
+- Build spec: [`specs/getting-in.md`](specs/getting-in.md), revision 2, matched to the final screen list (G1–G19, P1):
+  gender and "Only know your age?" for adults (an estimate, shown "about 52"; teens and under-13s always give month
+  and year); Health (G8) and Medicines + emergency contact (G9) after the data consent, optional; ABHA (G13–G14) and
+  Connect your apps (G15), optional; notifications only during onboarding (camera and location at first use);
+  First-time home (G17) after "you're in"; Hospital landing (G18), I have a token already (G19) and a launch row for
+  a hospital's QR (GI-19); Pro mode welcome (P1) before "Who are you?".
+- GI-01: `openedBefore` is set once Welcome is shown. GI-34: Sign in never reveals whether a number has an account
+  ("We've sent a code if this number has an account" + "Create an account").
+- Placeholders are fine for Today and Pro home until they are designed.
+- Age, consent and pro are clean new migrations, without the old game columns. Written and tested locally; the
+  founder approves before any deploy.
+- Phone sign-in is ON with three Supabase test numbers (fixed codes, no SMS sent, valid until 2027-06-30):
+  +91 90000 00001, +91 90000 00002, +91 90000 00003. The codes are never committed; ask the founder or read them in
+  Supabase → Authentication → Phone. No SMS provider is set up (paid SMS needs the founder's yes and DLT).
+- Google keys: the founder sends them later. Until then Google shows GI-37's "use your phone number instead".
+- Built and tested, awaiting the founder's okay before GS1 (2026-11-25): `decideLaunch()` (pure router, table test
+  GI-01..19 + G17); the shared kit (PhoneField, OtpBoxes, PrimaryButton, GoogleButton, LivingA moods, KpScaffold) with
+  goldens at 360×640 and 390×844, text 100% and 200%. At 200% the phone number and code digits grow only as far as their
+  field allows. The two migrations pass 55 local database tests and are NOT deployed (the live check expects them, so it
+  fails until the founder approves the deploy).
+
+## Final screen list and the founder's answers (2026-11-24, from the old repo's memory)
+- The final screen list, built from all 24 artifacts: Claude Doc "ApneDoctors: the final screen list" (https://claude.ai/artifact/LYyrcac8LcojBTMXrSQkd7). 150 patient screens + 36 pro/partner screens = 186. Every row names its source artifact. Hospital-side apps (ApneOS, ApneDoc, ApneMeds, HQ console, website) keep their own lists.
+- Founder's answers (2026-11-24):
+  - **Marketplace stays:** find any hospital, doctors, medicine delivery and pharmacy orders (overrides the Build Blueprint's white-label, no-discovery, no-delivery rule).
+  - **English only.** Hindi and Gujarati later; no language screen for now.
+  - **Plans:** Free, Plus, Family (patients) and Pro (doctors), each monthly or yearly with a 7-day free trial. Proposed, awaiting yes: Plus ₹99/mo or ₹999/yr, Family ₹199/mo or ₹1,999/yr (up to 5), Pro ₹499/mo or ₹4,990/yr (0% platform fee vs 5%, next-day payouts, own booking link and desk QR, own video calendar, follow-up messages, unlimited templates, full insights, one assistant). Search ranking, "featured" badges and reviews are never for sale. Care and safety are free on every plan. Marketing plan (promise "A doctor in your pocket. ₹99 a month.", offer moments, zero-budget growth, no dark patterns) lives in section 12 of the screen-list doc.
+  - **The intake AI is called ApneDoctors for now** (not Aarohi).
+  - **Organ companion: ON by default** (founder: "dont off it i need that"), a tile on Today, free on every plan, crisis screen first, hands off to a real doctor. (This replaces "off by default" further down.)
+  - **Stack: Flutter**, built in `Dev-Faldu/apnedoctors_app` (branch `flutter-v1`, Supabase project `yljfnbudjdijwjshqaba`).
+- Still open: prices, payment provider (Razorpay or Cashfree), first-release scope (suggested ~70 screens: getting in, visit day, states, plus find/book and SOS).
 
 ## Backend connected for real (founder: "connect it, no fake, no mock, no dummy", 2026-11-24)
 - The app talks to the live Supabase project `yljfnbudjdijwjshqaba` (ap-south-1, Mumbai; Postgres 17):
@@ -93,8 +128,8 @@ Last updated: 2026-11-24 (backend connected).
   (monsoon, Diwali, summer); it remembers you and checks on you after a consult; it shows real people present.
 - Daily pull from real value only: verified doctors' shorts, live sessions and free Q&A; the family health
   feed; live lock-screen activities. No endless feed, fake urgency, streak guilt, games or XP.
-- The old "organs gang chat" survives only as one small optional companion: off by default, crisis screen
-  first, hands off to a real doctor.
+- The old "organs gang chat" survives as one small companion: ON by default (founder, 2026-11-24), a tile on Today,
+  crisis screen first, hands off to a real doctor.
 - English only for now. Ages 13+; 13–17 need verified parental consent before chat, public posts or medicines.
 
 ## The founder and how they work
@@ -105,7 +140,7 @@ Last updated: 2026-11-24 (backend connected).
 
 ## Open questions for the founder
 - Approve milestone 1 (videos in the session) and the six deliberate differences above.
-- Sign-in, next: Google needs a Google Cloud OAuth client (free; the founder creates it and shares the client IDs);
-  phone OTP needs a paid SMS provider. Google only first, or both?
+- Google sign-in keys (iOS client ID, web client ID, Android SHA-1/SHA-256): the founder sends them.
+- Real SMS for phone sign-in: a paid provider with DLT registration, only with the founder's yes.
 - How doctors get verified (HPR check, who approves) before any doctor can appear online.
 - Connect a Mac to record iOS simulator videos?

@@ -7,6 +7,7 @@ import '../../core/brand/lockup.dart';
 import '../../core/motion/keyframes.dart';
 import '../../core/theme/css_paragraph.dart';
 import '../../core/theme/tokens.dart';
+import '../../shared/widgets/primary_button.dart';
 import '../opening/opening_choreography.dart';
 import 'doctors_online.dart';
 import 'doorway_painter.dart';
@@ -152,12 +153,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _PrimaryButton(
+                PrimaryButton(
                   label: 'Get started',
-                  onTap: widget.onGetStarted,
-                  time: t,
-                  shineDelay: w.shine,
-                  reduced: reduced,
+                  // Welcome's door always looks open; Get started (GS1) is wired as it is built
+                  onPressed: widget.onGetStarted ?? () {},
+                  shine: reduced ? null : ShineTiming(time: t, delay: w.shine),
                 ),
                 const SizedBox(height: 4),
                 _TextLink(label: 'I already have an account', onTap: widget.onSignIn),
@@ -387,128 +387,6 @@ class _Chevron extends CustomPainter {
 
   @override
   bool shouldRepaint(_Chevron old) => false;
-}
-
-class _PrimaryButton extends StatefulWidget {
-  const _PrimaryButton({
-    required this.label,
-    required this.onTap,
-    required this.time,
-    required this.shineDelay,
-    required this.reduced,
-  });
-
-  final String label;
-  final VoidCallback? onTap;
-  final ValueListenable<double> time;
-  final double shineDelay;
-  final bool reduced;
-
-  @override
-  State<_PrimaryButton> createState() => _PrimaryButtonState();
-}
-
-class _PrimaryButtonState extends State<_PrimaryButton> {
-  bool _down = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      enabled: widget.onTap != null,
-      label: widget.label,
-      excludeSemantics: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
-        onTapDown: (_) => setState(() => _down = true),
-        onTapUp: (_) => setState(() => _down = false),
-        onTapCancel: () => setState(() => _down = false),
-        child: AnimatedScale(
-          scale: _down ? .98 : 1,
-          duration: const Duration(milliseconds: 120),
-          child: CustomPaint(
-            // box-shadow: 0 10px 24px rgba(200,48,43,.28), a Gaussian with sigma = blur / 2
-            painter: const _SoftShadow(radius: 29, offset: Offset(0, 10), blur: 24, color: Color(0x47C8302B)),
-            child: Container(
-              height: 58,
-              decoration: const BoxDecoration(
-                color: AdColors.vermilion,
-                borderRadius: BorderRadius.all(Radius.circular(29)),
-              ),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.all(Radius.circular(29)),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Center(child: Text(widget.label, style: AdType.button)),
-                    if (!widget.reduced) _Shine(time: widget.time, delay: widget.shineDelay),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A CSS `box-shadow` painted directly (blur as a Gaussian with sigma = blur / 2).
-class _SoftShadow extends CustomPainter {
-  const _SoftShadow({required this.radius, required this.offset, required this.blur, required this.color});
-  final double radius;
-  final Offset offset;
-  final double blur;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(offset & size, Radius.circular(radius)),
-      Paint()
-        ..color = color
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, blur / 2),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_SoftShadow old) => false;
-}
-
-/// A soft band of light crossing the button every 3.6 s (`kShine`).
-class _Shine extends StatelessWidget {
-  const _Shine({required this.time, required this.delay});
-
-  final ValueListenable<double> time;
-  final double delay;
-
-  static final _x = Keyframes.of(const [(0, -1.4), (.72, -1.4), (1, 3.2)]);
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      left: 0,
-      top: 0,
-      bottom: 0,
-      width: 56,
-      child: ValueListenableBuilder<double>(
-        valueListenable: time,
-        builder: (context, t, _) {
-          final a = CssAnim(3.6, delay: delay, infinite: true, fill: Fill.none, curve: cssEaseInOut);
-          // The board leaves the band resting on the button before its first sweep (no fill-mode);
-          // here it waits off-button instead.
-          final p = a.progress(t) ?? 0;
-          final x = _x.at(p, 0, a.curve) * 56;
-          return Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.translationValues(x, 0, 0)..multiply(Matrix4.skewX(-20 * math.pi / 180)),
-            child: const ColoredBox(color: Color(0x47FFFFFF)),
-          );
-        },
-      ),
-    );
-  }
 }
 
 class _TextLink extends StatelessWidget {

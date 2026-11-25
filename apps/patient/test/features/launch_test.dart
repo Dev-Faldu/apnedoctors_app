@@ -15,7 +15,7 @@ void main() {
   setUpAll(loadAppFonts);
 
   group('LaunchStore', () {
-    test('EC-LAUNCH-04: a fresh device has not opened the app; marking is remembered', () async {
+    test('GI-01: a fresh device has not opened the app; marking is remembered', () async {
       SharedPreferences.setMockInitialValues({});
       final store = PrefsLaunchStore(await SharedPreferences.getInstance());
       expect(store.openedBefore, isFalse);
@@ -36,20 +36,43 @@ void main() {
     ],
   );
 
-  testWidgets('EC-LAUNCH-01: the first open plays the full opening', (tester) async {
+  testWidgets('GI-01: openedBefore is set only once Welcome is shown, not when the opening starts', (tester) async {
+    setPhone(tester, const Size(390, 844));
+    final store = MemoryLaunchStore();
+    await tester.pumpWidget(
+      phone(
+        const LaunchGate(),
+        overrides: [
+          launchKindProvider.overrideWithValue(LaunchKind.firstOpen),
+          launchStoreProvider.overrideWithValue(store),
+          doctorsOnlineProvider.overrideWith((ref) => Stream.value(null)),
+        ],
+      ),
+    );
+    for (var i = 0; i < 60 * 5; i++) {
+      await tester.pump(const Duration(microseconds: 16667));
+    }
+    expect(store.openedBefore, isFalse, reason: 'still in the opening: closing now shows it again');
+    for (var i = 0; i < 60 * 6; i++) {
+      await tester.pump(const Duration(microseconds: 16667));
+    }
+    expect(store.openedBefore, isTrue);
+  });
+
+  testWidgets('GI-01: the first open plays the full opening', (tester) async {
     setPhone(tester, const Size(390, 844));
     await tester.pumpWidget(gate(LaunchKind.firstOpen));
     expect(find.byType(OpeningScreen), findsOneWidget);
   });
 
-  testWidgets('EC-LAUNCH-04: opened before goes to Welcome, never the full opening again', (tester) async {
+  testWidgets('GI-03: opened before goes to Welcome, never the full opening again', (tester) async {
     setPhone(tester, const Size(390, 844));
     await tester.pumpWidget(gate(LaunchKind.returning));
     expect(find.byType(OpeningScreen), findsNothing);
     expect(find.byType(WelcomeHost), findsOneWidget);
   });
 
-  testWidgets('EC-LAUNCH-07: reduced motion skips the opening and nothing keeps moving', (tester) async {
+  testWidgets('GI-62: reduced motion skips the opening and nothing keeps moving', (tester) async {
     setPhone(tester, const Size(390, 844));
     await tester.pumpWidget(gate(LaunchKind.firstOpen, reduced: true));
     expect(find.byType(OpeningScreen), findsNothing);

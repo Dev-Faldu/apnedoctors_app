@@ -8,9 +8,10 @@ import 'launch_store.dart';
 
 /// Picks what the person sees when the app opens.
 ///
-/// - First open ever: the full opening into Welcome (EC-LAUNCH-01).
-/// - Opened before (signed out; sign-in is the next milestone): Welcome's own entrance.
-/// - Reduced motion: Welcome's settled frame, no opening (EC-LAUNCH-07).
+/// - First open ever: the full opening into Welcome; `openedBefore` is set once Welcome is shown (GI-01).
+/// - Opened before (signed out): Welcome's own entrance (GI-03).
+/// - Reduced motion: Welcome's settled frame, no opening (GI-62); Welcome is shown at once, so it counts.
+/// The full router (`decideLaunch`) takes over from here as the sign-in screens arrive.
 class LaunchGate extends ConsumerWidget {
   const LaunchGate({super.key});
 
@@ -19,9 +20,13 @@ class LaunchGate extends ConsumerWidget {
     final kind = ref.watch(launchKindProvider);
     final online = ref.watch(doctorsOnlineProvider).value;
     final reduced = MediaQuery.disableAnimationsOf(context);
-    if (reduced) return WelcomeHost(reduced: true, doctorsOnline: online);
+    final store = ref.read(launchStoreProvider);
+    if (reduced) {
+      if (!store.openedBefore) store.markOpened();
+      return WelcomeHost(reduced: true, doctorsOnline: online);
+    }
     return switch (kind) {
-      LaunchKind.firstOpen => OpeningScreen(doctorsOnline: online),
+      LaunchKind.firstOpen => OpeningScreen(doctorsOnline: online, onSettled: store.markOpened),
       LaunchKind.returning => WelcomeHost(doctorsOnline: online),
     };
   }

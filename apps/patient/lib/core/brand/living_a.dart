@@ -39,6 +39,7 @@ class AFace {
     this.lid = 1,
     this.blushStyle = BlushStyle.wash,
     this.happyLift = 14,
+    this.eyeScale = 1,
   });
 
   /// Open eyes (ink dots).
@@ -63,6 +64,9 @@ class AFace {
 
   /// Height of the happy-eye curve's control point (14 on the splash, 15 in the doorway).
   final double happyLift;
+
+  /// Size of the open eyes (1 = r 8). Smaller reads as worried.
+  final double eyeScale;
 
   static const awake = AFace();
 }
@@ -94,8 +98,8 @@ void paintLivingA(Canvas canvas, AFace face, {Color body = AdColors.vermilion, C
       canvas.translate(0, -AShape.eyeY);
     }
     final p = Paint()..color = eyes.withValues(alpha: eyes.a * face.open);
-    canvas.drawCircle(const Offset(-AShape.eyeDx, AShape.eyeY), AShape.eyeRadius, p);
-    canvas.drawCircle(const Offset(AShape.eyeDx, AShape.eyeY), AShape.eyeRadius, p);
+    canvas.drawCircle(const Offset(-AShape.eyeDx, AShape.eyeY), AShape.eyeRadius * face.eyeScale, p);
+    canvas.drawCircle(const Offset(AShape.eyeDx, AShape.eyeY), AShape.eyeRadius * face.eyeScale, p);
     canvas.restore();
   }
 

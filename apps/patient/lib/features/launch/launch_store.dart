@@ -5,8 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 abstract class LaunchStore {
   bool get openedBefore;
 
-  /// Marked as soon as the opening starts, so an app killed mid-opening never replays it in full
-  /// (EC-LAUNCH-04).
+  /// Marked once Welcome is shown (GI-01): someone who closes the app mid-opening sees it again.
   Future<void> markOpened();
 }
 

@@ -5,6 +5,7 @@ import 'package:flutter/painting.dart';
 /// Design: "Kalighat pop" (docs/design/kalighat-pop). Values are the board's CSS values.
 abstract final class AdColors {
   static const paper = Color(0xFFFBF7EF);
+  static const paperClear = Color(0x00FBF7EF); // paper at 0 alpha, for fades into paper
   static const vermilion = Color(0xFFC8302B); // brand, primary
   static const ink = Color(0xFF1A1410);
   static const haldi = Color(0xFFEFB12A); // turmeric
@@ -25,6 +26,11 @@ abstract final class AdColors {
   static const marigold = Color(0xFFF08A2B);
   static const toranString = Color(0xFF7A4B12);
 
+  // fields and quiet states (kp.css .field, .btn.off)
+  static const fieldBorder = Color(0xFFD9CDBA);
+  static const disabledFill = Color(0xFFE8DFD1);
+  static const focusRing = Color(0x24C8302B); // vermilion at 14%
+
   // avatar tints on the "doctors online" chip
   static const avatarIndigo = Color(0xFFDCE3F5);
   static const avatarRose = Color(0xFFF9D9D6);
@@ -35,6 +41,20 @@ abstract final class AdFonts {
   static const anek = 'AnekLatin';
   static const anekExt = 'AnekLatinExt';
   static const kaushan = 'KaushanScript';
+
+  /// Only inside the Google button, as Google's branding rules ask.
+  static const roboto = 'Roboto';
+}
+
+/// Google's sign-in button colours (light theme, neutral), as their branding guidelines set them.
+abstract final class GoogleBrand {
+  static const fill = Color(0xFFFFFFFF);
+  static const stroke = Color(0xFF747775);
+  static const text = Color(0xFF1F1F1F);
+  static const blue = Color(0xFF4285F4);
+  static const red = Color(0xFFEA4335);
+  static const yellow = Color(0xFFFBBC05);
+  static const green = Color(0xFF34A853);
 }
 
 /// Anek Latin is a variable font (wght 100–800, wdth 75–125, default wght 500), so every style sets
@@ -74,6 +94,27 @@ abstract final class AdType {
   static final chip = anek(size: 15, weight: 700, height: 17 / 15);
   static final avatar = anek(size: 11, weight: 800, height: 1);
   static final bubble = anek(size: 16, weight: 800, height: 1);
+
+  /// Screen headlines below Welcome's (lowercase, as on Welcome): 34px, wide and heavy.
+  static TextStyle headline({bool compact = false}) =>
+      anek(size: compact ? 30 : 34, weight: 800, width: 112, height: 1.02, letterSpacing: -.8);
+
+  /// Typed into fields (kp.css .field): 19px, weight 600.
+  static final field = anek(size: 19, weight: 600, height: 1.2);
+  static final fieldPrefix = anek(size: 19, weight: 700, height: 1.2);
+  static final otpDigit = anek(size: 28, weight: 800, width: 100, height: 1.1);
+
+  /// Errors and hints under a field: 16px so they are body-size readable.
+  static final error = anek(size: 16, weight: 600, height: 1.35, color: AdColors.vermilion);
+  static final hint = anek(size: 16, height: 1.35, color: AdColors.muted);
+  static final buttonDisabled = anek(size: 19, weight: 800, width: 110, height: 21 / 19, color: AdColors.muted);
+  static const google = TextStyle(
+    fontFamily: AdFonts.roboto,
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    height: 1.25,
+    color: GoogleBrand.text,
+  );
 }
 
 abstract final class AdSpace {

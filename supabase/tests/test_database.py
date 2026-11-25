@@ -18,6 +18,7 @@ import psycopg
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 MIGRATIONS = sorted((ROOT / 'supabase' / 'migrations').glob('*.sql'))
 URL = os.environ.get('TEST_DATABASE_URL', 'postgresql://postgres:postgres@127.0.0.1:54322/postgres')
+ADMIN_URL = os.environ.get('TEST_ADMIN_DATABASE_URL', 'postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres')
 
 
 class Db(unittest.TestCase):
@@ -25,6 +26,14 @@ class Db(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        # The image ships the first Auth and Storage schemas; hosted projects get these columns from the Auth (GoTrue)
+        # and Storage services' own migrations.
+        with psycopg.connect(ADMIN_URL, autocommit=True) as admin:
+            admin.execute('''alter table storage.buckets
+                               add column if not exists public boolean default false,
+                               add column if not exists file_size_limit bigint,
+                               add column if not exists allowed_mime_types text[]''')
+            admin.execute('alter table auth.users add column if not exists phone text unique default null')
         cls.conn = psycopg.connect(URL, autocommit=False)
         with cls.conn.cursor() as cur:
             for m in MIGRATIONS:  # applied as `postgres`, like the hosted project
@@ -104,17 +113,21 @@ class Security(Db):
                          where n.nspname = 'public' and c.relkind in ('r', 'p') and not c.relrowsecurity""")
         self.assertEqual(rows, [], 'tables without RLS')
 
-    def test_ec_sec_02_anon_can_only_run_the_public_count(self):
+    def test_ec_sec_02_anon_can_only_run_the_public_count_and_app_requirements(self):
         rows = self.q("""select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
                          where n.nspname in ('public', 'private')
                            and has_function_privilege('anon', p.oid, 'execute') order by 1""")
-        self.assertEqual([r[0] for r in rows], ['doctors_online'])
+        self.assertEqual([r[0] for r in rows], ['app_requirements', 'doctors_online'])
 
-    def test_ec_sec_02_signed_in_people_can_count_and_doctors_can_set_presence(self):
+    def test_ec_sec_02_signed_in_people_run_only_the_checked_functions(self):
         rows = self.q("""select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
                          where n.nspname in ('public', 'private')
                            and has_function_privilege('authenticated', p.oid, 'execute') order by 1""")
-        self.assertEqual([r[0] for r in rows], ['doctors_online', 'set_doctor_presence'])
+        self.assertEqual([r[0] for r in rows], [
+            'app_requirements', 'attach_pro_document', 'doctors_online', 'finish_onboarding_step', 'keep_my_account',
+            'mark_first_home_seen', 'my_launch_state', 'record_consent', 'request_parent_consent',
+            'save_pro_application', 'set_basics', 'set_doctor_presence', 'set_mode', 'submit_pro_application',
+            'withdraw_consent'])
 
     def test_ec_sec_03_the_private_schema_is_closed(self):
         for role in ('anon', 'authenticated'):

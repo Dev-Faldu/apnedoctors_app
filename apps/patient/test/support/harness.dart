@@ -1,4 +1,6 @@
+import 'package:cupertino_ui/cupertino_ui.dart' show DefaultCupertinoLocalizations;
 import 'package:flutter/widgets.dart';
+import 'package:material_ui/material_ui.dart' show DefaultMaterialLocalizations;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -20,11 +22,22 @@ Widget phone(Widget child, {List overrides = const [], bool reducedMotion = fals
         final mq = MediaQuery.of(context);
         return MediaQuery(
           data: mq.copyWith(disableAnimations: reducedMotion, textScaler: TextScaler.linear(textScale)),
-          child: Directionality(
-            textDirection: TextDirection.ltr,
-            child: DefaultTextStyle(
-              style: AdType.lede(),
-              child: ColoredBox(color: AdColors.paper, child: child),
+          // the app's words for paste/selection menus, and an Overlay for them, like WidgetsApp gives
+          child: Localizations(
+            locale: const Locale('en'),
+            delegates: const [
+              DefaultMaterialLocalizations.delegate,
+              DefaultCupertinoLocalizations.delegate,
+              DefaultWidgetsLocalizations.delegate,
+            ],
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: Overlay.wrap(
+                child: DefaultTextStyle(
+                  style: AdType.lede(),
+                  child: ColoredBox(color: AdColors.paper, child: child),
+                ),
+              ),
             ),
           ),
         );

@@ -43,15 +43,26 @@ lib/
     brand/             the living "a" painter, the lockup, path helpers, generated lockup glyphs
     config/            public env
   features/
-    launch/            which opening plays (first open, returning, reduced motion)
+    launch/            decide_launch.dart: the pure launch router (GI-01..19, G17), launch_state.dart: its inputs;
+                       launch_gate.dart: which opening plays (first open, returning, reduced motion)
     opening/           native splash → splash → hand-off (N00Splash); opening_spec.g.dart is generated
     welcome/           Welcome (N01Welcome): doorway painter, timings, doctors-online chip
+  shared/
+    indian_phone.dart  parses Indian mobile numbers as people type and paste them (GI-20..23)
+    widgets/           the Getting-in kit: PhoneField, OtpBoxes, PrimaryButton, GoogleButton, LivingA (moods),
+                       KpScaffold (paper, 24 px sides, back chevron, scrolls at large text, actions above the keyboard)
 test/                  unit, widget and golden tests (edge-case IDs in names)
 tool/
   gen_opening_spec.py  writes opening_spec.g.dart and lockup_glyphs.g.dart from the board's own maths
   frames/              renders the app frame by frame
   design_compare/      renders the board frame by frame and diffs the two
 ```
+
+## Large text (GI-60)
+
+Every screen is checked at 200% text. The body scrolls; buttons grow taller. Fields whose content must stay on
+one line (the phone number, the code digits) grow as far as their width allows and no further
+(`fitScaler`, `digitScaler`). Labels and messages around them keep the person's full size.
 
 ## How the opening matches the board
 

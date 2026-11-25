@@ -70,7 +70,8 @@ if TOKEN:
     status, rows = query("""select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
                             where n.nspname in ('public','private')
                               and has_function_privilege('anon', p.oid, 'execute') order by 1""")
-    check('the public can run only doctors_online', status in (200, 201) and [r['proname'] for r in rows] == ['doctors_online'],
+    check('the public can run only doctors_online and app_requirements', status in (200, 201)
+          and [r['proname'] for r in rows] == ['app_requirements', 'doctors_online'],
           f'{status} {rows}')
     status, rows = query("""begin;
                             create table public.zz_rls_probe (id int);
