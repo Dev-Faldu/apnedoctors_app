@@ -3,9 +3,25 @@
 Read this at the start of every session. Newest sections first; they win over anything below them.
 Keep it current: when a decision changes, change it here in the same commit.
 
-Last updated: 2026-11-25 (getting-in foundations built).
+Last updated: 2026-11-26 (Get started built).
 
-## Getting in: decisions before the build (founder, 2026-11-24, newest)
+## Get started (GS1) built, awaiting the founder's review (2026-11-26, newest)
+- Founder: the Get started board (Design canvas "ApneDoctors: Get started", copied to
+  `docs/design/kalighat-pop/G03GetStarted/`) is **a reference only** ("it has lots of issues"); make every screen the
+  best in the world, and design the flow from tapping a button to the next page. Welcome stays as it is ("amazing").
+- **The walk through the doorway** (Welcome → Get started): Welcome's doorway grows towards you and dissolves, the "a"
+  steps out and glides on one curve to its seat beside the headline, the toran drops in, the page rises (0.9 s); Back
+  reverses it (0.7 s). Welcome itself is unchanged until you tap (its goldens are identical).
+- **The number is the hero:** ten painted dots (5 + 5, the Kalighat dot border) that become digits as you type; a paste
+  fills slot after slot; a tick pops in. Help and errors at 16 px (the board's 14 px broke the body-text rule).
+- Offline is an ink pill under the toran (no layout jump). Mood changes and the short-phone fold animate (no jumps).
+- Send code calls Supabase phone sign-in for real (`signInWithOtp`, creates the account on first use). Verified live
+  with test number +91 90000 00001; the unconfirmed test account it created was deleted afterwards (0 users).
+- Google button: Google's official four-colour G with the app's own type and outline (the board used a lookalike G);
+  Roboto removed from the app. Google's guidelines suggest Roboto for the label: the founder may prefer it.
+- Kept from before: migrations still NOT deployed (awaiting the founder's yes).
+
+## Getting in: decisions before the build (founder, 2026-11-24)
 - Stay in `Dev-Faldu/apnedoctors_app` and Supabase project `yljfnbudjdijwjshqaba`. The old repo `apnedoctors-app`
   keeps design history and docs only.
 - Build spec: [`specs/getting-in.md`](specs/getting-in.md), revision 2, matched to the final screen list (G1–G19, P1):
@@ -139,6 +155,7 @@ Last updated: 2026-11-25 (getting-in foundations built).
   what's approved. Ask before anything destructive, costly or hard to undo.
 
 ## Open questions for the founder
+- Approve Get started (GS1) and the walk through the doorway; then GS2 (the code screen).
 - Approve milestone 1 (videos in the session) and the six deliberate differences above.
 - Google sign-in keys (iOS client ID, web client ID, Android SHA-1/SHA-256): the founder sends them.
 - Real SMS for phone sign-in: a paid provider with DLT registration, only with the founder's yes.

@@ -1,9 +1,13 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../app/app.dart' show Routes;
 
 import '../opening/opening_screen.dart';
 import '../welcome/doctors_online.dart';
 import '../welcome/welcome_host.dart';
+import '../welcome/doorway_hand_off.dart';
 import 'launch_store.dart';
 
 /// Picks what the person sees when the app opens.
@@ -21,13 +25,18 @@ class LaunchGate extends ConsumerWidget {
     final online = ref.watch(doctorsOnlineProvider).value;
     final reduced = MediaQuery.disableAnimationsOf(context);
     final store = ref.read(launchStoreProvider);
+    void getStarted() => context.push(Routes.getStarted, extra: DoorwayHandOff.take());
     if (reduced) {
       if (!store.openedBefore) store.markOpened();
-      return WelcomeHost(reduced: true, doctorsOnline: online);
+      return WelcomeHost(reduced: true, doctorsOnline: online, onGetStarted: getStarted);
     }
     return switch (kind) {
-      LaunchKind.firstOpen => OpeningScreen(doctorsOnline: online, onSettled: store.markOpened),
-      LaunchKind.returning => WelcomeHost(doctorsOnline: online),
+      LaunchKind.firstOpen => OpeningScreen(
+        doctorsOnline: online,
+        onSettled: store.markOpened,
+        onGetStarted: getStarted,
+      ),
+      LaunchKind.returning => WelcomeHost(doctorsOnline: online, onGetStarted: getStarted),
     };
   }
 }

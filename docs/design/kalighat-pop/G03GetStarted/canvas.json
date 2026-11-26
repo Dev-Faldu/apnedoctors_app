@@ -1,0 +1,91 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-26T20:26:15Z"
+ },
+ "title": "ApneDoctors: Get started",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "G3 Sign up · try it (type a number)",
+   "is_interactive": true
+  },
+  "Typing.dc.html": {
+   "x": 470,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Typing"
+  },
+  "Ready.dc.html": {
+   "x": 940,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Number ready"
+  },
+  "WrongNumber.dc.html": {
+   "x": 1410,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Not a mobile number"
+  },
+  "Sending.dc.html": {
+   "x": 1880,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Sending the code"
+  },
+  "Offline.dc.html": {
+   "x": 2350,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "Offline"
+  },
+  "SmallPhone.dc.html": {
+   "x": 2820,
+   "y": 0,
+   "w": 360,
+   "h": 640,
+   "title": "Small phone, keyboard open (360×640)"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Typing.dc.html",
+  "Ready.dc.html",
+  "WrongNumber.dc.html",
+  "Sending.dc.html",
+  "Offline.dc.html",
+  "SmallPhone.dc.html"
+ ],
+ "notes": {
+  "title": {
+   "x": 0,
+   "y": -300,
+   "text": "Get started: the screen after Welcome",
+   "kind": "title1",
+   "maxW": 3180
+  },
+  "flutter": {
+   "x": 3260,
+   "y": 0,
+   "w": 380,
+   "size": "m",
+   "fill": "orange",
+   "text": "For the Flutter build\n\n• Opens from Welcome's Get started. The a leaves the doorway and glides up to the right of the headline on one curve (0.85 s); the headline, line, field and buttons rise in after it.\n• The a listens: its eyes move right as digits land. 10 valid digits → happy. Starts with 0–5 → worried. Sending → looks up.\n• Field: +91 fixed, 10 digits shown as 98765 43210. Paste with +91, 91 or a leading 0 is cleaned (GI-20, GI-22).\n• Send code turns vermilion only for a valid number; one tap sends once (GI-24).\n• Keyboard open: Send code always sits above it. On short phones the line hides and the a moves into the top bar (GI-63).\n• Offline: dark strip, both buttons off (GI-12).\n• Colours and type: kp.css (paper #FBF7EF, ink #1A1410, vermilion #C8302B, Anek Latin)."
+  }
+ },
+ "designSystems": []
+}

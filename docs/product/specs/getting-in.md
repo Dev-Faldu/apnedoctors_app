@@ -77,15 +77,30 @@ its own landing (section 7).
 ## 3. Get started (new patient)
 
 ### GS1 · G3 Sign up
-- Headline: **"let's get you in."**
-- Line: "Your number keeps your care in one place. We'll text you a code."
-- The "a" sits small at the top in its *listening* state: its eyes follow the typing caret.
-- **Phone field:**
-  - fixed `+91` prefix chip; 10 digits, shown as `98765 43210`;
-  - numeric keyboard, autofill hint `telephoneNumber`.
-- **Send code**: primary vermilion button, disabled until the number is valid.
-- A divider ("or"), then **Continue with Google**, following Google's button branding rules.
-- Footer: "By continuing you agree to our Terms and Privacy Policy" (both are links), and "Already have an account? Sign in".
+Built 2026-11-26. Reference board: `docs/design/kalighat-pop/G03GetStarted/` (a reference, not a copy: the founder
+asked for the best design, not the board's exact pixels).
+- **Arriving (the walk through the doorway):** from Welcome's Get started, Welcome's doorway grows towards you and
+  dissolves, the living "a" steps out of it and glides on one curve to sit beside the headline, the toran drops in
+  across the top and the page rises in (0.9 s). Back plays it in reverse (0.7 s). Reduced motion: a cross-fade.
+- Headline: **"let's get you in."** Line: "Your number keeps your care in one place. We'll text you a code."
+- The "a" beside the headline: *listening* (leans in, eyes follow the digits), *happy* (a good number, code sent),
+  *worried* (starts with 0–5, offline, a failed send), *thinking* (sending).
+- **Phone field:** fixed `+91`, then ten slots in the shape of an Indian mobile (five, a breath, five). An empty slot
+  is a painted dot; each digit drops into its slot and takes the dot's place; a paste fills slot after slot. A tick pops
+  in when the number looks right. Numeric keyboard, autofill `telephoneNumber`, one real (invisible) text field for
+  typing, pasting, autofill and screen readers ("Mobile number, plus 91").
+- **Help line** (16 px, under the field): "We'll text a 6-digit code to this number." when valid; "Indian mobiles start
+  with 6, 7, 8 or 9." as soon as a number starts with 0–5 (GI-21); the server's answers (GI-26, GI-66, GI-67).
+- **Send code**: primary vermilion, resting until the number is valid; "Sending code" with three dots while it works;
+  then an ink "Code sent · change number" and "Code sent to +91 98765 43210." (GS2 takes over here once built).
+- A divider ("or"), then **Continue with Google** (Google's own G, the app's type). Until the keys arrive it says
+  GI-37's "Google sign-in isn't working right now. Use your phone number instead."
+- Offline (GI-12): an ink pill slides in under the toran ("You're offline. Connect and try again."), both buttons rest,
+  nothing on the page moves.
+- Keyboard open (GI-63): Send code stays above it. On a short phone the line folds away and the "a" glides up into the
+  top bar.
+- Footer: "By continuing you agree to our Terms and Privacy Policy" (both links), and "Already have an account?
+  **Sign in**".
 - Android back goes to Welcome.
 
 ### GS2 · G4 Code (OTP)
@@ -288,7 +303,8 @@ Same Kalighat pop base, calmer: no mascot jokes.
 
 ### Phone number
 - **GI-20** Input with spaces, dashes, a leading 0, +91 or 91 → normalised to `+91XXXXXXXXXX`.
-- **GI-21** Must be 10 digits starting 6–9. Otherwise: "That doesn't look like an Indian mobile number."
+- **GI-21** Must be 10 digits starting 6–9. As soon as a number starts with 0–5: "Indian mobiles start with 6, 7, 8 or 9."
+  (and "That doesn't look like an Indian mobile number." wherever a whole number is judged at once).
 - **GI-22** Pasting a number with a country code or spaces → parsed correctly.
 - **GI-23** International and premium-rate numbers are blocked (SMS fraud). India-only for the beta.
 - **GI-24** Double-tapping Send code sends only one request.

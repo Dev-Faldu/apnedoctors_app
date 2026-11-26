@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart' show DefaultMaterialLocalizations;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:apnedoctors/core/theme/css_paragraph.dart';
 import 'package:apnedoctors/core/theme/tokens.dart';
 
 /// Pins the test view to a phone size (logical px) at [dpr].
@@ -45,3 +46,7 @@ Widget phone(Widget child, {List overrides = const [], bool reducedMotion = fals
     ),
   );
 }
+
+/// Finds text drawn on CSS line boxes (`CssParagraph`), which `find.text` can't see.
+Finder findParagraph(String text) =>
+    find.byWidgetPredicate((w) => w is CssParagraph && w.text == text, description: 'CssParagraph "$text"');

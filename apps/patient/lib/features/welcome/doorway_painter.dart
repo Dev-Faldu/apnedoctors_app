@@ -44,7 +44,8 @@ class DoorwayPainter extends CustomPainter {
     required this.compact,
     required this.bubbleText,
     this.extraTop = 0,
-  }) : super(repaint: time);
+    this.away,
+  }) : super(repaint: away == null ? time : Listenable.merge([time, away]));
 
   final ValueListenable<double> time;
   final WelcomeTimings timings;
@@ -52,6 +53,9 @@ class DoorwayPainter extends CustomPainter {
   final bool compact;
   final TextPainter bubbleText;
   final double extraTop;
+
+  /// While the next screen carries the a away (the walk through the doorway), the doorway is left without it.
+  final ValueListenable<double>? away;
 
   // ---- artwork (viewBox units) ----
   static final _archLine = MeasuredPath(
@@ -294,6 +298,8 @@ class DoorwayPainter extends CustomPainter {
           ? 0
           : CssAnim(7, delay: w.say, infinite: true, fill: Fill.none, curve: cssEaseInOut).sample(t, _sayOut)!;
     }
+    // the namaste leaves with the a when the next screen carries it away
+    op *= 1 - ((away?.value ?? 0) / .12).clamp(0.0, 1.0);
     if (op <= 0) return;
     // origin: 20% 100% of the bubble's box (182..286 x 154..206)
     const origin = Offset(202.8, 206);
@@ -330,7 +336,7 @@ class DoorwayPainter extends CustomPainter {
         }
       }
     }
-    if (op <= 0) return;
+    if (op <= 0 || (away?.value ?? 0) > 0) return;
 
     // idle life: bow, look around, blink, happy eyes
     double rot = 0, bowTy = 0, bowSx = 1, bowSy = 1, look = 0, lid = 1, happy = 0, peek = 0;
@@ -392,5 +398,6 @@ class DoorwayPainter extends CustomPainter {
       old.timings != timings ||
       old.reduced != reduced ||
       old.compact != compact ||
-      old.extraTop != extraTop;
+      old.extraTop != extraTop ||
+      old.away != away;
 }

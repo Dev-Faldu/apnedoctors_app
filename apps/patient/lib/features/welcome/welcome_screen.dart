@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../core/brand/lockup.dart';
@@ -10,6 +11,7 @@ import '../../core/theme/tokens.dart';
 import '../../shared/widgets/primary_button.dart';
 import '../opening/opening_choreography.dart';
 import 'doctors_online.dart';
+import 'doorway_hand_off.dart';
 import 'doorway_painter.dart';
 import 'welcome_timings.dart';
 
@@ -57,6 +59,19 @@ class WelcomeScreen extends StatefulWidget {
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
   final _bubble = TextPainter(textDirection: TextDirection.ltr);
+  final _ownHeroKey = GlobalKey();
+
+  GlobalKey get _heroKey => widget.heroKey ?? _ownHeroKey;
+
+  /// Get started: leave the a's place for the next screen, which carries it on (the walk through the doorway).
+  void _getStarted() {
+    final box = _heroKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize && !widget.reduced) {
+      final g = DoorwayGeometry(box.size);
+      DoorwayHandOff.leave(AFlightStart(bowl: box.localToGlobal(g.aBowl), scale: g.aScale));
+    }
+    widget.onGetStarted?.call();
+  }
 
   @override
   void dispose() {
@@ -70,6 +85,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final w = widget.timings;
     final t = widget.time;
     final reduced = widget.reduced;
+    // when the next screen comes in on top, Welcome walks you through its doorway
+    final away = ModalRoute.of(context)?.secondaryAnimation;
     _bubble
       ..text = TextSpan(text: 'namaste!', style: AdType.bubble)
       ..textScaler = TextScaler.noScaling
@@ -89,17 +106,28 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         }
 
         final hero = ConstrainedBox(
-          key: widget.heroKey,
+          key: _heroKey,
           constraints: const BoxConstraints(minHeight: 140),
           child: _HeroMotion(
             time: t,
             offset: reduced ? null : widget.heroOffset,
-            child: Semantics(
-              label: 'The ApneDoctors a stands in a painted Indian doorway and greets you with a namaste',
-              image: true,
-              child: CustomPaint(
-                painter: DoorwayPainter(time: t, timings: w, reduced: reduced, compact: compact, bubbleText: _bubble),
-                child: const SizedBox.expand(),
+            child: _WalkThrough(
+              away: away,
+              reduced: reduced,
+              child: Semantics(
+                label: 'The ApneDoctors a stands in a painted Indian doorway and greets you with a namaste',
+                image: true,
+                child: CustomPaint(
+                  painter: DoorwayPainter(
+                    time: t,
+                    timings: w,
+                    reduced: reduced,
+                    compact: compact,
+                    bubbleText: _bubble,
+                    away: reduced ? null : away,
+                  ),
+                  child: const SizedBox.expand(),
+                ),
               ),
             ),
           ),
@@ -154,9 +182,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 PrimaryButton(
+                  size: ButtonSize.hero,
                   label: 'Get started',
-                  // Welcome's door always looks open; Get started (GS1) is wired as it is built
-                  onPressed: widget.onGetStarted ?? () {},
+                  onPressed: _getStarted,
                   shine: reduced ? null : ShineTiming(time: t, delay: w.shine),
                 ),
                 const SizedBox(height: 4),
@@ -177,8 +205,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 children: [
                   SizedBox(height: top + 44),
                   Expanded(child: hero),
-                  copy,
-                  actions,
+                  _StepAside(away: away, child: copy),
+                  _StepAside(away: away, child: actions),
                   // the link's touch area is 48 tall (7 more than the board's 41), taken from this gap
                   SizedBox(height: bottom - 7),
                 ],
@@ -218,7 +246,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             children: [
               Positioned.fill(child: page),
               // the bar is 44 tall on the board; its touch row is 48, centred on the same line
-              Positioned(left: 0, right: 0, top: top - 2, height: 48, child: bar),
+              Positioned(
+                left: 0,
+                right: 0,
+                top: top - 2,
+                height: 48,
+                child: _StepAside(away: away, child: bar),
+              ),
             ],
           ),
         );
@@ -293,6 +327,107 @@ class _HeroMotion extends StatelessWidget {
       valueListenable: time,
       child: child,
       builder: (context, t, child) => Transform.translate(offset: Offset(0, f(t)), child: child),
+    );
+  }
+}
+
+/// The walk through the doorway: as the next screen comes in, the doorway grows towards you around the a's place
+/// and dissolves, as if you stepped through it (and steps back into place when you come back). Reduced motion: it
+/// simply fades. (A render object, so Welcome's intrinsic-height layout can still measure it.)
+class _WalkThrough extends SingleChildRenderObjectWidget {
+  const _WalkThrough({required this.away, required this.reduced, required super.child});
+  final Animation<double>? away;
+  final bool reduced;
+
+  @override
+  _RenderWalkThrough createRenderObject(BuildContext context) => _RenderWalkThrough(away, reduced);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderWalkThrough renderObject) {
+    renderObject
+      ..away = away
+      ..reduced = reduced;
+  }
+}
+
+class _RenderWalkThrough extends RenderProxyBox {
+  _RenderWalkThrough(this._away, this.reduced);
+
+  Animation<double>? _away;
+  set away(Animation<double>? v) {
+    if (v == _away) return;
+    if (attached) {
+      _away?.removeListener(markNeedsPaint);
+      v?.addListener(markNeedsPaint);
+    }
+    _away = v;
+    markNeedsCompositingBitsUpdate();
+    markNeedsPaint();
+  }
+
+  bool reduced;
+
+  static const _in = Cubic(.55, 0, .8, .4); // gathers speed, like a step forward
+
+  @override
+  void attach(PipelineOwner owner) {
+    super.attach(owner);
+    _away?.addListener(markNeedsPaint);
+  }
+
+  @override
+  void detach() {
+    _away?.removeListener(markNeedsPaint);
+    super.detach();
+  }
+
+  // composited whenever a route can walk through it, so the fade inside the growing doorway grows with it
+  @override
+  bool get alwaysNeedsCompositing => _away != null;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    final v = _away?.value ?? 0;
+    if (v == 0 || child == null) return super.paint(context, offset);
+    final fade = 1 - const Interval(.2, .7, curve: Curves.easeIn).transform(v);
+    if (fade <= 0) return;
+    void faded(PaintingContext c, Offset o) =>
+        c.pushOpacity(o, (fade * 255).round(), (c, o) => c.paintChild(child!, o));
+    if (reduced) return faded(context, offset);
+    final focal = DoorwayGeometry(size).aBowl;
+    final grow = 1 + 2.6 * _in.transform(const Interval(0, .8).transform(v));
+    final m = Matrix4.identity()
+      ..translateByDouble(focal.dx, focal.dy, 0, 1)
+      ..scaleByDouble(grow, grow, 1, 1)
+      ..translateByDouble(-focal.dx, -focal.dy, 0, 1);
+    context.pushTransform(needsCompositing, offset, m, faded);
+  }
+}
+
+/// Everything around the doorway steps aside while you walk through it: a quick fade and a small drift down.
+class _StepAside extends StatelessWidget {
+  const _StepAside({required this.away, required this.child});
+  final Animation<double>? away;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final a = away;
+    if (a == null) return child;
+    return AnimatedBuilder(
+      animation: a,
+      child: child,
+      builder: (context, child) {
+        final v = a.value;
+        if (v == 0) return child!;
+        final e = const Interval(0, .35, curve: Curves.easeOut).transform(v);
+        return IgnorePointer(
+          child: Opacity(
+            opacity: 1 - e,
+            child: Transform.translate(offset: Offset(0, 22 * e), child: child),
+          ),
+        );
+      },
     );
   }
 }

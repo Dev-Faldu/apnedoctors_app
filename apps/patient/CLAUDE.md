@@ -46,17 +46,27 @@ lib/
     launch/            decide_launch.dart: the pure launch router (GI-01..19, G17), launch_state.dart: its inputs;
                        launch_gate.dart: which opening plays (first open, returning, reduced motion)
     opening/           native splash → splash → hand-off (N00Splash); opening_spec.g.dart is generated
-    welcome/           Welcome (N01Welcome): doorway painter, timings, doctors-online chip
+    welcome/           Welcome (N01Welcome): doorway painter, timings, doctors-online chip; doorway_hand_off.dart:
+                       where the a stood when a door was tapped (the next screen carries it on)
+    get_started/       GS1: the screen, its a (four moods), the toran, the real code sender (Supabase phone OTP)
   shared/
     indian_phone.dart  parses Indian mobile numbers as people type and paste them (GI-20..23)
-    widgets/           the Getting-in kit: PhoneField, OtpBoxes, PrimaryButton, GoogleButton, LivingA (moods),
-                       KpScaffold (paper, 24 px sides, back chevron, scrolls at large text, actions above the keyboard)
+    widgets/           the Getting-in kit: PhoneField (painted dot slots), OtpBoxes, PrimaryButton, GoogleButton,
+                       LivingA (moods), KpScaffold, FillColumn (footer pinned, scrolls when taller), kp_icons
 test/                  unit, widget and golden tests (edge-case IDs in names)
 tool/
   gen_opening_spec.py  writes opening_spec.g.dart and lockup_glyphs.g.dart from the board's own maths
-  frames/              renders the app frame by frame
+  frames/              renders the app frame by frame (capture_test: the opening; walk_through_test: Welcome →
+                       Get started and back, for a video)
   design_compare/      renders the board frame by frame and diffs the two
 ```
+
+## Moving between screens
+
+Each door on Welcome opens its own path, and the move is part of the design. Welcome → Get started is the walk
+through the doorway: Get started's route animation brings its paper, toran and page in and flies the a from where
+Welcome left it (`DoorwayHandOff`); Welcome reads its own route's secondary animation to grow the doorway past you
+and step everything else aside. Back reverses both. With reduced motion it is a cross-fade.
 
 ## Large text (GI-60)
 

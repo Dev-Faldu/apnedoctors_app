@@ -13,7 +13,6 @@ Future<void> loadAppFonts() async {
     (AdFonts.anek, 'assets/fonts/AnekLatin-Variable.ttf'),
     (AdFonts.anekExt, 'assets/fonts/AnekLatinExt-Variable.ttf'),
     (AdFonts.kaushan, 'assets/fonts/KaushanScript-Regular.ttf'),
-    (AdFonts.roboto, 'assets/fonts/Roboto-Medium.ttf'),
   ]) {
     await (FontLoader(family)..addFont(rootBundle.load(file))).load();
   }

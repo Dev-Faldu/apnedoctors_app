@@ -7,20 +7,55 @@ import 'package:flutter/widgets.dart';
 import '../../core/motion/keyframes.dart';
 import '../../core/theme/tokens.dart';
 
-/// The one main action on a screen: a vermilion pill (kp.css `.btn.primary`, Welcome's "Get started").
+/// Which board the button comes from.
+enum ButtonSize {
+  /// kp.css `.btn`: 56 px, 18 px label, flat. Every screen after Welcome.
+  regular,
+
+  /// Welcome's "Get started": 58 px, 19 px label, a soft vermilion shadow.
+  hero,
+}
+
+/// The fill of an enabled button.
+enum ButtonTone {
+  /// The one main action (`.btn.primary`).
+  vermilion,
+
+  /// Something done or settled (`.btn.done`): ink with paper text.
+  ink,
+}
+
+/// The one main action on a screen: a vermilion pill.
 ///
 /// - `onPressed: null` → disabled: readable quiet colours, not a faded red.
-/// - `loading` → three breathing dots in place of the label; taps are ignored, so a second tap never sends twice (GI-24).
-/// - 58 px tall; with large text it grows taller instead of clipping (GI-60).
+/// - `loading` → three breathing dots, with [busyLabel] beside them when given ("Sending code"); taps are ignored,
+///   so a second tap never sends twice (GI-24).
+/// - With large text it grows taller instead of clipping (GI-60).
 class PrimaryButton extends StatefulWidget {
-  const PrimaryButton({super.key, required this.label, required this.onPressed, this.loading = false, this.shine});
+  const PrimaryButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.loading = false,
+    this.busyLabel,
+    this.shine,
+    this.size = ButtonSize.regular,
+    this.tone = ButtonTone.vermilion,
+    this.leading,
+  });
 
   final String label;
   final VoidCallback? onPressed;
   final bool loading;
+  final String? busyLabel;
 
-  /// The soft band of light that crosses the button every 3.6 s (Welcome). Null: no shine.
+  /// The soft band of light that crosses the button every 3.6 s. Null: no shine.
   final ShineTiming? shine;
+  final ButtonSize size;
+  final ButtonTone tone;
+
+  /// A small drawn icon before the label.
+  final Widget? leading;
 
   @override
   State<PrimaryButton> createState() => _PrimaryButtonState();
@@ -42,12 +77,51 @@ class _PrimaryButtonState extends State<PrimaryButton> {
   @override
   Widget build(BuildContext context) {
     final reduced = MediaQuery.disableAnimationsOf(context);
-    final on = widget.onPressed != null;
+    final on = widget.onPressed != null || widget.loading;
+    final hero = widget.size == ButtonSize.hero;
+    final height = hero ? 58.0 : 56.0;
+    final radius = Radius.circular(height / 2);
+    final ink = widget.tone == ButtonTone.ink;
+    final fill = !on ? AdColors.disabledFill : (ink ? AdColors.ink : AdColors.vermilion);
+    final style = switch ((hero, on)) {
+      (true, true) => AdType.button,
+      (true, false) => AdType.buttonDisabled,
+      (false, true) => KpType.button,
+      (false, false) => KpType.buttonOff,
+    }.copyWith(color: on ? (ink ? AdColors.paper : AdColors.white) : AdColors.muted);
     final shine = widget.shine;
+    final busy = widget.busyLabel;
+
+    Widget content;
+    if (widget.loading) {
+      content = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _LoadingDots(reduced: reduced, big: busy == null),
+          if (busy != null) ...[
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(busy, textAlign: TextAlign.center, style: style),
+            ),
+          ],
+        ],
+      );
+    } else {
+      content = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (widget.leading != null) ...[widget.leading!, const SizedBox(width: 8)],
+          Flexible(
+            child: Text(widget.label, textAlign: TextAlign.center, style: style),
+          ),
+        ],
+      );
+    }
+
     return Semantics(
       button: true,
       enabled: _enabled,
-      label: widget.loading ? '${widget.label}, working' : widget.label,
+      label: widget.loading ? (busy ?? '${widget.label}, working') : widget.label,
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -59,31 +133,19 @@ class _PrimaryButtonState extends State<PrimaryButton> {
           scale: _down ? .98 : 1,
           duration: const Duration(milliseconds: 120),
           child: CustomPaint(
-            // box-shadow: 0 10px 24px rgba(200,48,43,.28), a Gaussian with sigma = blur / 2
-            painter: on
+            // Welcome: box-shadow 0 10px 24px rgba(200,48,43,.28), a Gaussian with sigma = blur / 2
+            painter: hero && on
                 ? const _SoftShadow(radius: 29, offset: Offset(0, 10), blur: 24, color: Color(0x47C8302B))
                 : null,
             child: Container(
-              constraints: const BoxConstraints(minHeight: 58),
-              decoration: BoxDecoration(
-                color: on ? AdColors.vermilion : AdColors.disabledFill,
-                borderRadius: const BorderRadius.all(Radius.circular(29)),
-              ),
+              constraints: BoxConstraints(minHeight: height),
+              decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.all(radius)),
               child: ClipRRect(
-                borderRadius: const BorderRadius.all(Radius.circular(29)),
+                borderRadius: BorderRadius.all(radius),
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      child: widget.loading
-                          ? _LoadingDots(reduced: reduced)
-                          : Text(
-                              widget.label,
-                              textAlign: TextAlign.center,
-                              style: on ? AdType.button : AdType.buttonDisabled,
-                            ),
-                    ),
+                    Padding(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8), child: content),
                     if (shine != null && on && !reduced && !widget.loading)
                       Positioned.fill(
                         child: _Shine(time: shine.time, delay: shine.delay),
@@ -156,10 +218,14 @@ class _Shine extends StatelessWidget {
   }
 }
 
-/// Three paper dots breathing one after another (the splash's loading dots, on the button).
+/// Three dots breathing one after another.
+///
+/// - beside a label (G03 `.sdots`): 7 px white dots 5 px apart, opacity .2 → 1 → .2 over 1.1 s, .18 s apart;
+/// - alone ([big]): the splash's loading dots.
 class _LoadingDots extends StatefulWidget {
-  const _LoadingDots({required this.reduced});
+  const _LoadingDots({required this.reduced, required this.big});
   final bool reduced;
+  final bool big;
 
   @override
   State<_LoadingDots> createState() => _LoadingDotsState();
@@ -183,16 +249,11 @@ class _LoadingDotsState extends State<_LoadingDots> with SingleTickerProviderSta
     super.dispose();
   }
 
-  static final _pulse = Keyframes(
-    dim: 2,
-    offsets: const [0, .5, 1],
-    values: const [.35, .8, 1, 1, .35, .8],
-    curves: const [null, null, null],
-  );
-
   @override
   Widget build(BuildContext context) {
-    return SizedBox(width: 48, height: 21, child: CustomPaint(painter: _DotsPainter(_t, widget.reduced)));
+    return widget.big
+        ? SizedBox(width: 48, height: 21, child: CustomPaint(painter: _BigDotsPainter(_t, widget.reduced)))
+        : SizedBox(width: 31, height: 7, child: CustomPaint(painter: _DotsPainter(_t, widget.reduced)));
   }
 }
 
@@ -201,13 +262,40 @@ class _DotsPainter extends CustomPainter {
   final ValueListenable<double> t;
   final bool reduced;
 
+  static final _kDot = Keyframes.of(const [(0, .2), (.5, 1), (1, .2)]);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (var i = 0; i < 3; i++) {
+      final anim = CssAnim(1.1, delay: i * .18, infinite: true, fill: Fill.none, curve: cssEaseInOut);
+      final op = reduced ? 1.0 : (anim.sample(t.value, _kDot) ?? 1);
+      canvas.drawCircle(Offset(3.5 + i * 12, 3.5), 3.5, Paint()..color = AdColors.white.withValues(alpha: op));
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DotsPainter old) => old.reduced != reduced;
+}
+
+class _BigDotsPainter extends CustomPainter {
+  _BigDotsPainter(this.t, this.reduced) : super(repaint: t);
+  final ValueListenable<double> t;
+  final bool reduced;
+
+  static final _pulse = Keyframes(
+    dim: 2,
+    offsets: const [0, .5, 1],
+    values: const [.35, .8, 1, 1, .35, .8],
+    curves: const [null, null, null],
+  );
+
   @override
   void paint(Canvas canvas, Size size) {
     for (var i = 0; i < 3; i++) {
       final anim = CssAnim(1.2, delay: i * .18, infinite: true, curve: cssEaseInOut);
       final p = reduced ? .5 : (anim.progress(t.value) ?? 0);
-      final op = _LoadingDotsState._pulse.at(p, 0, anim.curve);
-      final s = _LoadingDotsState._pulse.at(p, 1, anim.curve);
+      final op = _pulse.at(p, 0, anim.curve);
+      final s = _pulse.at(p, 1, anim.curve);
       canvas.drawCircle(
         Offset(size.width / 2 + (i - 1) * 16, size.height / 2),
         4 * s,
@@ -217,5 +305,5 @@ class _DotsPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_DotsPainter old) => old.reduced != reduced;
+  bool shouldRepaint(_BigDotsPainter old) => old.reduced != reduced;
 }

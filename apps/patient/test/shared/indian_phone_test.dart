@@ -48,6 +48,6 @@ void main() {
 
   test('nothing typed asks for the number', () {
     expect((parseIndianPhone('  ') as PhoneBad).problem, PhoneProblem.empty);
-    expect(phoneProblemText(PhoneProblem.notAMobile), "That doesn't look like an Indian mobile number.");
+    expect(phoneProblemText(PhoneProblem.notAMobile), 'That doesn’t look like an Indian mobile number.');
   });
 }

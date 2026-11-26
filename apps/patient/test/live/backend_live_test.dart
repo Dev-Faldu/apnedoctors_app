@@ -9,7 +9,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:apnedoctors/core/config/env.dart';
+import 'package:apnedoctors/features/get_started/phone_code_sender.dart';
 import 'package:apnedoctors/features/welcome/doctors_online.dart';
+import 'package:apnedoctors/shared/indian_phone.dart';
 
 const live = bool.fromEnvironment('LIVE');
 
@@ -41,6 +43,13 @@ void main() {
       throwsA(isA<PostgrestException>()),
     );
     await expectLater(client.rpc('set_doctor_presence', params: {'online': true}), throwsA(isA<PostgrestException>()));
+  }, skip: !live);
+
+  // Uses a Supabase test number (fixed code, no SMS is sent). Its code is never in the repo.
+  test('GS1: Send code asks Supabase for a real code (test number, no SMS)', () async {
+    final result = await SupabasePhoneCodeSender(client).send(parseIndianPhone('+91 90000 00001') as PhoneOk);
+    // a second run within a minute meets Supabase's own wait, which the screen shows as a countdown (GI-26)
+    expect(result is CodeSent || result is SendWait, isTrue, reason: '$result');
   }, skip: !live);
 }
 

@@ -2,8 +2,9 @@ import 'package:flutter/widgets.dart';
 
 import '../../core/theme/tokens.dart';
 
-/// "Continue with Google", following Google's sign-in branding: white fill, #747775 outline, the four-colour "G",
-/// Roboto Medium label, pill shape. Same height as [PrimaryButton] so the two sit together.
+/// "Continue with Google", drawn to the Get started board (G03 `.btn.google`): a white pill with a quiet outline,
+/// Google's own four-colour "G", the label in the app's type. Same height as [PrimaryButton] so the two sit together.
+/// Off (offline, while a code is sending): paper-grey, the "G" greyed out.
 class GoogleButton extends StatelessWidget {
   const GoogleButton({super.key, required this.onPressed, this.loading = false, this.label = 'Continue with Google'});
 
@@ -11,9 +12,24 @@ class GoogleButton extends StatelessWidget {
   final bool loading;
   final String label;
 
+  static const _grey = ColorFilter.matrix([
+    0.2126, 0.7152, 0.0722, 0, 0, //
+    0.2126, 0.7152, 0.0722, 0, 0, //
+    0.2126, 0.7152, 0.0722, 0, 0, //
+    0, 0, 0, 1, 0,
+  ]);
+
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null && !loading;
+    final off = onPressed == null;
+    Widget g = const SizedBox(width: 20, height: 20, child: CustomPaint(painter: GoogleG()));
+    if (off) {
+      g = Opacity(
+        opacity: .45,
+        child: ColorFiltered(colorFilter: _grey, child: g),
+      );
+    }
     return Semantics(
       button: true,
       enabled: enabled,
@@ -24,25 +40,25 @@ class GoogleButton extends StatelessWidget {
         onTap: enabled ? onPressed : null,
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 160),
-          opacity: loading ? .6 : (onPressed == null ? .38 : 1),
+          opacity: loading ? .6 : 1,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 58),
+            constraints: const BoxConstraints(minHeight: 56),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
-              color: GoogleBrand.fill,
-              borderRadius: const BorderRadius.all(Radius.circular(29)),
-              border: Border.all(color: GoogleBrand.stroke),
+              color: off ? AdColors.lockedFill : AdColors.white,
+              borderRadius: const BorderRadius.all(Radius.circular(28)),
+              border: Border.all(color: off ? AdColors.lockedBorder : AdColors.fieldBorder, width: 1.5),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(width: 20, height: 20, child: CustomPaint(painter: GoogleG())),
+                g,
                 const SizedBox(width: 12),
                 Flexible(
                   // longestLine: when large text wraps the label, the "G" stays beside the words, not at the far edge
                   child: Text(
                     label,
-                    style: AdType.google,
+                    style: KpType.google.copyWith(color: off ? AdColors.muted : AdColors.ink),
                     textAlign: TextAlign.center,
                     textWidthBasis: TextWidthBasis.longestLine,
                   ),

@@ -61,9 +61,12 @@ PhoneParse parseIndianPhone(String input) {
   return PhoneOk(digits);
 }
 
+/// The live hint when a number starts with 0–5 (GI-21): what an Indian mobile looks like.
+const phoneStartHint = 'Indian mobiles start with 6, 7, 8 or 9.';
+
 /// What the person sees for a problem (sentence case, says what to do next).
 String phoneProblemText(PhoneProblem p) => switch (p) {
   PhoneProblem.empty => 'Enter your 10-digit mobile number.',
-  PhoneProblem.notAMobile => "That doesn't look like an Indian mobile number.",
+  PhoneProblem.notAMobile => 'That doesn’t look like an Indian mobile number.',
   PhoneProblem.notIndian => 'For now we can only send codes to Indian mobile numbers.',
 };

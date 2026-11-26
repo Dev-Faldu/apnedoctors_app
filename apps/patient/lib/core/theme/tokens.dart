@@ -31,6 +31,14 @@ abstract final class AdColors {
   static const disabledFill = Color(0xFFE8DFD1);
   static const focusRing = Color(0x24C8302B); // vermilion at 14%
 
+  // Get started (G03): field states, tick, error text
+  static const placeholder = Color(0xFF9A8D7C); // typed-text hint, never body copy
+  static const lockedFill = Color(0xFFF4EEE4); // a field or button that can't be used right now
+  static const lockedBorder = Color(0xFFE3D9C9);
+  static const ring = Color(0x1FC8302B); // vermilion at 12%, around a focused or wrong field
+  static const errorText = Color(0xFFA3221D); // deep vermilion: 6.6:1 on paper
+  static const tick = Color(0xFF3F7F38); // "looks right": 4.9:1 against white
+
   // avatar tints on the "doctors online" chip
   static const avatarIndigo = Color(0xFFDCE3F5);
   static const avatarRose = Color(0xFFF9D9D6);
@@ -41,16 +49,10 @@ abstract final class AdFonts {
   static const anek = 'AnekLatin';
   static const anekExt = 'AnekLatinExt';
   static const kaushan = 'KaushanScript';
-
-  /// Only inside the Google button, as Google's branding rules ask.
-  static const roboto = 'Roboto';
 }
 
-/// Google's sign-in button colours (light theme, neutral), as their branding guidelines set them.
+/// The colours of Google's "G", as their branding guidelines set them.
 abstract final class GoogleBrand {
-  static const fill = Color(0xFFFFFFFF);
-  static const stroke = Color(0xFF747775);
-  static const text = Color(0xFF1F1F1F);
   static const blue = Color(0xFF4285F4);
   static const red = Color(0xFFEA4335);
   static const yellow = Color(0xFFFBBC05);
@@ -108,13 +110,53 @@ abstract final class AdType {
   static final error = anek(size: 16, weight: 600, height: 1.35, color: AdColors.vermilion);
   static final hint = anek(size: 16, height: 1.35, color: AdColors.muted);
   static final buttonDisabled = anek(size: 19, weight: 800, width: 110, height: 21 / 19, color: AdColors.muted);
-  static const google = TextStyle(
-    fontFamily: AdFonts.roboto,
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    height: 1.25,
-    color: GoogleBrand.text,
+}
+
+/// Get started (G03) and the screens built on kp.css `.btn`, `.field`, `.lab`.
+abstract final class KpType {
+  /// The screen headline: 46 px / .94, wide and heavy. 36 px on a short phone with the keyboard open.
+  static TextStyle h1({bool compact = false}) =>
+      anek(size: compact ? 36 : 46, weight: 800, width: 112, height: .94, letterSpacing: compact ? -1 : -1.4);
+
+  /// A field's label: 14 px bold, muted.
+  static final label = anek(size: 14, weight: 700, height: 16 / 14, color: AdColors.muted);
+
+  /// The +91 in the phone field.
+  static final countryCode = anek(size: 20, weight: 700, width: 105, height: 22 / 20);
+
+  /// Digits of the phone number, each drawn in its own slot.
+  static final digits = anek(size: 24, weight: 600, width: 104, height: 1.25);
+
+  /// The line under a field: body size, so it reads as easily as the rest.
+  static final help = anek(size: 16, height: 1.35, color: AdColors.muted);
+  static final helpBad = anek(size: 16, weight: 600, height: 1.35, color: AdColors.errorText);
+
+  /// kp.css `.btn`: 18 px, heavy and wide.
+  static final button = anek(size: 18, weight: 800, width: 110, height: 20 / 18, color: AdColors.white);
+  static final buttonOff = button.copyWith(color: AdColors.muted);
+
+  /// The Google button's label: 17 px bold, normal width.
+  static final google = anek(size: 17, weight: 700, height: 19 / 17);
+
+  /// The "or" between the two ways in.
+  static final or = anek(size: 14, weight: 700, height: 16 / 14, color: AdColors.muted);
+
+  /// The fine print and its links.
+  static final terms = anek(size: 14, height: 1.45, color: AdColors.muted);
+  static final termsLink = terms.copyWith(
+    color: AdColors.ink,
+    fontWeight: FontWeight.w700,
+    fontVariations: const [FontVariation('wght', 700), FontVariation('wdth', 100)],
+    decoration: TextDecoration.underline,
+    decorationColor: AdColors.ink,
   );
+
+  /// "Already have an account? Sign in": the question quiet, the way in strong.
+  static final signIn = anek(size: 16, weight: 600, height: 1.25, color: AdColors.body);
+  static final signInStrong = anek(size: 16, weight: 800, height: 1.25, color: AdColors.vermilion);
+
+  /// The ink pill that slides in when the phone is offline.
+  static final offline = anek(size: 15, weight: 700, height: 1.3, color: AdColors.paper);
 }
 
 abstract final class AdSpace {

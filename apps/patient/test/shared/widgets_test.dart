@@ -1,10 +1,10 @@
-import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:apnedoctors/core/theme/tokens.dart';
 import 'package:apnedoctors/shared/indian_phone.dart';
 import 'package:apnedoctors/shared/widgets/google_button.dart';
+import 'package:apnedoctors/shared/widgets/kp_icons.dart';
 import 'package:apnedoctors/shared/widgets/kp_scaffold.dart';
 import 'package:apnedoctors/shared/widgets/living_a.dart';
 import 'package:apnedoctors/shared/widgets/otp_boxes.dart';
@@ -12,6 +12,7 @@ import 'package:apnedoctors/shared/widgets/phone_field.dart';
 import 'package:apnedoctors/shared/widgets/primary_button.dart';
 
 import '../support/fonts.dart';
+import '../support/get_started_driver.dart' show phoneInput;
 import '../support/harness.dart';
 
 Widget pad(Widget child) => Padding(
@@ -23,64 +24,98 @@ void main() {
   setUpAll(loadAppFonts);
 
   group('PhoneField', () {
-    Future<(TextEditingController, List<PhoneParse>)> field(WidgetTester tester) async {
+    Future<(TextEditingController, List<PhoneParse>)> field(WidgetTester tester, {bool reduced = true}) async {
       setPhone(tester, const Size(390, 844));
       final c = TextEditingController();
       final seen = <PhoneParse>[];
-      await tester.pumpWidget(phone(pad(PhoneField(controller: c, onChanged: seen.add))));
+      await tester.pumpWidget(
+        phone(
+          pad(PhoneField(controller: c, onChanged: seen.add)),
+          reducedMotion: reduced,
+        ),
+      );
       return (c, seen);
     }
 
-    testWidgets('GI-20: typed digits group as 98765 43210 and parse to +91', (tester) async {
+    RenderDigitSlots slots(WidgetTester tester) => tester.renderObject<RenderDigitSlots>(find.byType(DigitSlots));
+
+    testWidgets('GI-20: typed digits group as 98765 43210, parse to +91, and the tick pops in', (tester) async {
       final (c, seen) = await field(tester);
-      await tester.enterText(find.byType(EditableText), '9876543210');
+      await tester.enterText(phoneInput, '9876543210');
       await tester.pump();
       expect(c.text, '98765 43210');
       expect((seen.last as PhoneOk).e164, '+919876543210');
-      expect(find.textContaining("doesn't look like"), findsNothing);
+      expect(findParagraph('We’ll text a 6-digit code to this number.'), findsOneWidget);
+      expect(
+        tester
+            .widget<AnimatedScale>(find.ancestor(of: find.byType(TickMark), matching: find.byType(AnimatedScale)))
+            .scale,
+        1,
+      );
+    });
+
+    testWidgets('the empty field shows ten dots; each digit takes one dot\'s place', (tester) async {
+      final (_, _) = await field(tester);
+      expect(tester.widget<DigitSlots>(find.byType(DigitSlots)).digits, '');
+      await tester.enterText(phoneInput, '98765');
+      await tester.pump();
+      expect(tester.widget<DigitSlots>(find.byType(DigitSlots)).digits, '98765');
+      expect(slots(tester).size.width, greaterThan(0));
+    });
+
+    testWidgets('digits drop into their slots (and a paste fills slot after slot)', (tester) async {
+      final (_, _) = await field(tester, reduced: false);
+      await tester.enterText(phoneInput, '9876543210');
+      await tester.pump();
+      final born = tester.widget<DigitSlots>(find.byType(DigitSlots)).born;
+      expect(born[9], greaterThan(born[0])); // staggered
+      await tester.pump(const Duration(seconds: 1));
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('GI-22: a pasted +91 number with spaces lands as ten digits', (tester) async {
       final (c, _) = await field(tester);
-      await tester.enterText(find.byType(EditableText), '+91 98765-43210');
+      await tester.enterText(phoneInput, '+91 98765-43210');
       expect(c.text, '98765 43210');
-      await tester.enterText(find.byType(EditableText), '098765 43210');
+      await tester.enterText(phoneInput, '098765 43210');
       expect(c.text, '98765 43210');
     });
 
-    testWidgets('GI-21: ten digits that are not a mobile say so', (tester) async {
+    testWidgets('GI-21: a first digit of 0–5 is called out at once, with what a mobile looks like', (tester) async {
       final (_, seen) = await field(tester);
-      await tester.enterText(find.byType(EditableText), '5876543210');
+      await tester.enterText(phoneInput, '5');
       await tester.pump();
-      expect(find.text("That doesn't look like an Indian mobile number."), findsOneWidget);
+      expect(findParagraph(phoneStartHint), findsOneWidget);
       expect((seen.last as PhoneBad).problem, PhoneProblem.notAMobile);
     });
 
-    testWidgets('GI-21: no complaint while still typing', (tester) async {
+    testWidgets('GI-21: no complaint while a good number is still being typed', (tester) async {
       await field(tester);
-      await tester.enterText(find.byType(EditableText), '98765');
+      await tester.enterText(phoneInput, '98765');
       await tester.pump();
-      expect(find.textContaining("doesn't look like"), findsNothing);
+      expect(findParagraph(phoneStartHint), findsNothing);
+      expect(find.byType(AlertMark), findsNothing);
     });
 
     testWidgets('GI-23: another country\'s number is refused in plain words', (tester) async {
       final (c, seen) = await field(tester);
-      await tester.enterText(find.byType(EditableText), '+1 415 555 0100');
+      await tester.enterText(phoneInput, '+1 415 555 0100');
       await tester.pump();
       expect(c.text, '');
-      expect(find.text('For now we can only send codes to Indian mobile numbers.'), findsOneWidget);
+      expect(findParagraph('For now we can only send codes to Indian mobile numbers.'), findsOneWidget);
       expect((seen.last as PhoneBad).problem, PhoneProblem.notIndian);
     });
 
-    testWidgets('GI-60: at 200% text on a small phone the whole number still shows, still large', (tester) async {
+    testWidgets('GI-60: at 200% text on a small phone the whole number still fits on one line', (tester) async {
       setPhone(tester, const Size(360, 640));
       await tester.pumpWidget(
         phone(pad(PhoneField(controller: TextEditingController(text: '98765 43210'))), textScale: 2),
       );
       expect(tester.takeException(), isNull);
-      final editable = tester.allRenderObjects.whereType<RenderEditable>().single;
-      expect(editable.getMaxIntrinsicWidth(double.infinity), lessThanOrEqualTo(editable.size.width));
-      expect(editable.size.height, greaterThan(19 * 1.2 * 1.4)); // grown well past 100%, only capped to fit
+      final box = tester.getRect(find.byType(DigitSlots));
+      final field = tester.getRect(find.byType(PhoneField));
+      expect(box.right, lessThan(field.right));
+      expect(box.height, greaterThanOrEqualTo(24 * 1.25));
     });
 
     testWidgets('GI-61: screen readers hear what the field is for', (tester) async {
@@ -217,25 +252,25 @@ void main() {
         phone(pad(PrimaryButton(label: 'Continue as +91 98•••••210', onPressed: () {})), textScale: 2),
       );
       expect(tester.takeException(), isNull);
-      expect(tester.getSize(find.byType(PrimaryButton)).height, greaterThan(58));
+      expect(tester.getSize(find.byType(PrimaryButton)).height, greaterThan(56));
     });
   });
 
   group('GoogleButton', () {
-    testWidgets('follows Google\'s branding and reports taps', (tester) async {
+    testWidgets('Google\'s own G, the app\'s type and a quiet outline; reports taps', (tester) async {
       setPhone(tester, const Size(390, 844));
       var taps = 0;
       await tester.pumpWidget(phone(pad(GoogleButton(onPressed: () => taps++))));
       await tester.tap(find.byType(GoogleButton));
       expect(taps, 1);
       final label = tester.widget<Text>(find.text('Continue with Google'));
-      expect(label.style!.fontFamily, AdFonts.roboto);
+      expect(label.style!.fontFamily, AdFonts.anek);
       final box = tester.widget<Container>(
         find.descendant(of: find.byType(GoogleButton), matching: find.byType(Container)),
       );
       final d = box.decoration! as BoxDecoration;
-      expect(d.color, GoogleBrand.fill);
-      expect((d.border! as Border).top.color, GoogleBrand.stroke);
+      expect(d.color, AdColors.white);
+      expect((d.border! as Border).top.color, AdColors.fieldBorder);
     });
   });
 

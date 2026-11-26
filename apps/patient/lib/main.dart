@@ -47,7 +47,6 @@ void _registerFontLicences() {
     for (final f in const [
       ('Anek Latin', 'assets/fonts/OFL-AnekLatin.txt'),
       ('Kaushan Script', 'assets/fonts/OFL-KaushanScript.txt'),
-      ('Roboto', 'assets/fonts/OFL-Roboto.txt'),
     ]) {
       yield LicenseEntryWithLineBreaks([f.$1], await rootBundle.loadString(f.$2));
     }
