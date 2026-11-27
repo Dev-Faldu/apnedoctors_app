@@ -11,12 +11,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/motion/keyframes.dart';
 import '../../core/theme/css_paragraph.dart';
 import '../../core/theme/tokens.dart';
+import '../../shared/headline_fit.dart';
 import '../../shared/indian_phone.dart';
 import '../../shared/widgets/code_tiles.dart';
 import '../../shared/widgets/fill_column.dart';
 import '../../shared/widgets/google_button.dart' show GoogleG;
 import '../../shared/widgets/kp_icons.dart';
 import '../../shared/widgets/phone_field.dart' show DigitSlots;
+import '../../shared/widgets/page_moves.dart';
 import '../../shared/widgets/primary_button.dart';
 import '../launch/launch_store.dart';
 import 'code_verifier.dart';
@@ -84,8 +86,9 @@ class CodeScreen extends ConsumerStatefulWidget {
   /// Change the number: back to the phone screen, ready to edit; this code is forgotten (GI-31).
   final VoidCallback? onChange;
 
-  /// Signed in. (About you comes next.)
-  final VoidCallback? onVerified;
+  /// Signed in: called once the celebration has played, with this screen's clock, so About you carries the a and the
+  /// toran on without a jump.
+  final ValueChanged<double>? onVerified;
 
   @override
   ConsumerState<CodeScreen> createState() => _CodeScreenState();
@@ -107,6 +110,7 @@ class _CodeScreenState extends ConsumerState<CodeScreen> with SingleTickerProvid
   Timer? _settle;
   Timer? _unwrong;
   Timer? _visible;
+  Timer? _leave;
 
   late DateTime _sentAt = widget.arrival.sentAt;
   late int _sends = widget.arrival.sends;
@@ -178,6 +182,7 @@ class _CodeScreenState extends ConsumerState<CodeScreen> with SingleTickerProvid
     _settle?.cancel();
     _unwrong?.cancel();
     _visible?.cancel();
+    _leave?.cancel();
     _code.dispose();
     _focus.dispose();
     _clock.dispose();
@@ -217,7 +222,11 @@ class _CodeScreenState extends ConsumerState<CodeScreen> with SingleTickerProvid
         });
         _focus.unfocus();
         _remember(null);
-        widget.onVerified?.call();
+        // the a jumps for joy and the petals fly, then About you takes over
+        final reduced = MediaQuery.disableAnimationsOf(context);
+        _leave = Timer(Duration(milliseconds: reduced ? 900 : 1600), () {
+          if (mounted) widget.onVerified?.call(_clock.value);
+        });
       case VerifyRejected():
         if (_sinceSent > CodeRules.life) {
           setState(() {
@@ -384,19 +393,19 @@ class _CodeScreenState extends ConsumerState<CodeScreen> with SingleTickerProvid
     });
 
     Widget slideIn(double start, Widget child) =>
-        reduced ? FadeTransition(opacity: route, child: child) : _SlideIn(route: route, start: start, child: child);
+        reduced ? FadeTransition(opacity: route, child: child) : SlideIn(route: route, start: start, child: child);
 
     // the headline fits beside the a (46 px where it can, smaller on narrow phones)
     final heroWidth = width - 2 * AdSpace.side - (aInBar ? 0 : 102);
-    final h1 = _fitted(KpType.h1(), 'check your', width - 2 * AdSpace.side - 102);
+    final h1 = HeadlineFit.fitted(KpType.h1(), 'check your', width - 2 * AdSpace.side - 102);
     // the headline grows with the text size only until its longest word fills the line, so no word ever breaks
-    final h1Grow = _grow(h1, 'messages.', heroWidth);
-    final h1CompactGrow = _grow(
-      _fitted(KpType.h1(compact: true), CodeCopy.headlineCompact, width - 48),
+    final h1Grow = HeadlineFit.grow(h1, 'messages.', heroWidth);
+    final h1CompactGrow = HeadlineFit.grow(
+      HeadlineFit.fitted(KpType.h1(compact: true), CodeCopy.headlineCompact, width - 48),
       'messages.',
       width - 2 * AdSpace.side,
     );
-    final h1Compact = _fitted(KpType.h1(compact: true), CodeCopy.headlineCompact, width - 2 * AdSpace.side);
+    final h1Compact = HeadlineFit.fitted(KpType.h1(compact: true), CodeCopy.headlineCompact, width - 2 * AdSpace.side);
 
     final pill = _NumberPill(
       phone: _phone,
@@ -568,6 +577,9 @@ class _CodeScreenState extends ConsumerState<CodeScreen> with SingleTickerProvid
       ],
     );
 
+    // when About you comes in on top, the toran and the a stay put there (it draws its own) and the rest steps aside
+    final away = ModalRoute.of(context)?.secondaryAnimation ?? kAlwaysDismissedAnimation;
+
     // the a, in the same seat as on the phone screen (or up in the top bar on a short phone with the keyboard open)
     final aScale = aInBar ? .56 : 1.0;
     final a = AnimatedPositioned(
@@ -580,7 +592,10 @@ class _CodeScreenState extends ConsumerState<CodeScreen> with SingleTickerProvid
         curve: Curves.easeInOutCubic,
         alignment: Alignment.topLeft,
         scale: aScale,
-        child: GetStartedA(time: _clock, mood: _mood, digits: _code.text.length * 10 ~/ 6, reduced: reduced),
+        child: HideWhile(
+          away: away,
+          child: GetStartedA(time: _clock, mood: _mood, digits: _code.text.length * 10 ~/ 6, reduced: reduced),
+        ),
       ),
     );
 
@@ -590,17 +605,28 @@ class _CodeScreenState extends ConsumerState<CodeScreen> with SingleTickerProvid
           top: safeTop,
           left: 0,
           right: 0,
-          child: Toran(time: _clock, reduced: reduced),
+          child: HideWhile(
+            away: away,
+            child: Toran(time: _clock, reduced: reduced),
+          ),
         ),
-        FillColumn(
-          key: _pageKey,
-          minHeight: height,
-          top: Padding(padding: EdgeInsets.fromLTRB(AdSpace.side, safeTop, AdSpace.side, 0), child: top),
-          bottom: SizedBox(height: math.max(24, mq.padding.bottom)),
+        StepLeft(
+          away: away,
+          reduced: reduced,
+          child: FillColumn(
+            key: _pageKey,
+            minHeight: height,
+            top: Padding(padding: EdgeInsets.fromLTRB(AdSpace.side, safeTop, AdSpace.side, 0), child: top),
+            bottom: SizedBox(height: math.max(24, mq.padding.bottom)),
+          ),
         ),
         a,
         Positioned.fill(
-          child: _PetalLayer(time: _clock, firedAt: _petalsAt, tilesKey: _tilesKey, reduced: reduced),
+          child: StepLeft(
+            away: away,
+            reduced: reduced,
+            child: _PetalLayer(time: _clock, firedAt: _petalsAt, tilesKey: _tilesKey, reduced: reduced),
+          ),
         ),
         if (widget.arrival.numberFrom != null && !reduced)
           Positioned.fill(
@@ -630,55 +656,6 @@ class _CodeScreenState extends ConsumerState<CodeScreen> with SingleTickerProvid
           child: SingleChildScrollView(controller: _scroll, child: page),
         ),
       ],
-    );
-  }
-
-  /// How far text in [style] may grow before [word] no longer fits in [width] (at least 1).
-  static double _grow(TextStyle style, String word, double width) {
-    final p = TextPainter(
-      text: TextSpan(text: word, style: style),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final w = p.width;
-    p.dispose();
-    return math.max(1, width / w * .95); // a little margin, so the last letter never wraps alone
-  }
-
-  /// [style] at a size where [text] fits in [width] (never larger than the style's own).
-  static TextStyle _fitted(TextStyle style, String text, double width) {
-    final p = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final w = p.width;
-    p.dispose();
-    if (w <= width) return style;
-    final k = width / w;
-    return style.copyWith(fontSize: style.fontSize! * k, letterSpacing: style.letterSpacing! * k);
-  }
-}
-
-/// Slides in from the right (and away to the right on Back) as the route moves.
-class _SlideIn extends StatelessWidget {
-  const _SlideIn({required this.route, required this.start, required this.child});
-  final Animation<double> route;
-  final double start;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: route,
-      child: child,
-      builder: (context, child) {
-        final v = route.value;
-        if (v >= 1) return child!;
-        final e = Interval(start, math.min(1, start + .55), curve: Curves.easeOutCubic).transform(v);
-        return Opacity(
-          opacity: e,
-          child: Transform.translate(offset: Offset(44 * (1 - e), 0), child: child),
-        );
-      },
     );
   }
 }

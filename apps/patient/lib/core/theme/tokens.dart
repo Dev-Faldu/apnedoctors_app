@@ -41,6 +41,12 @@ abstract final class AdColors {
   static const okFill = Color(0xFFEEF6EC); // a verified code's tiles
   static const okText = Color(0xFF2F6A29); // on okFill: 5.9:1
 
+  // About you (G05)
+  static const softLine = Color(0xFFF1EADF); // dividers inside white cards
+  static const scrim = Color(0x731A1410); // ink at 45%, behind a sheet
+  static const noteFill = Color(0xFFFFF3D6); // haldi tint behind a gentle "not this way" note
+  static const whiteClear = Color(0x00FFFFFF); // white at 0 alpha, for fades into a white card
+
   // avatar tints on the "doctors online" chip
   static const avatarIndigo = Color(0xFFDCE3F5);
   static const avatarRose = Color(0xFFF9D9D6);
@@ -174,6 +180,55 @@ abstract final class KpType {
 
   /// The ink pill that slides in when the phone is offline.
   static final offline = anek(size: 15, weight: 700, height: 1.3, color: AdColors.paper);
+
+  // ---- About you (G05) ----
+
+  /// What the a says in its speech bubble (kp.css `.bub`): 20 px, heavy, a little wide. 17 px in the top bar.
+  static TextStyle bubble({bool compact = false}) =>
+      anek(size: compact ? 17 : 20, weight: 800, width: 108, height: 1.15);
+
+  /// The line under a headline that says why we ask: body size.
+  static final why = anek(size: 16, height: 1.45, color: AdColors.body);
+
+  /// A name as it is typed.
+  static final nameInput = anek(size: 22, weight: 600, height: 1.2);
+  static final namePlaceholder = nameInput.copyWith(color: AdColors.placeholder);
+
+  /// A small grey word beside a label ("optional").
+  static final labelAside = anek(size: 14, weight: 600, height: 16 / 14, color: AdColors.muted);
+
+  /// The birthday wheel: the chosen month and year, and the ones around it.
+  static final wheelChosen = anek(size: 24, weight: 800, width: 104, height: 1.1, color: AdColors.white);
+  static final wheelOther = anek(size: 20, weight: 600, height: 1.1, color: AdColors.muted);
+
+  /// "That makes you 22."
+  static final ageLine = anek(size: 17, weight: 700, height: 1.3);
+  static final ageLineNumber = anek(size: 17, weight: 800, height: 1.3, color: AdColors.vermilion);
+
+  /// The big age on "about how old are you?".
+  static final bigAge = anek(size: 104, weight: 800, width: 118, height: .92, letterSpacing: -3);
+  static final bigAgeUnit = anek(size: 16, weight: 700, height: 1.2, color: AdColors.muted);
+
+  /// An answer to pick ("Woman").
+  static final choice = anek(size: 19, weight: 700, height: 1.2);
+
+  /// An underlined way to answer differently ("Only know your age?").
+  static final textLink = anek(
+    size: 16,
+    weight: 700,
+    height: 1.25,
+  ).copyWith(decoration: TextDecoration.underline, decorationColor: AdColors.ink, decorationThickness: 1.6);
+
+  /// The confirm sheet's question.
+  static final sheetTitle = anek(size: 30, weight: 800, width: 112, height: .98, letterSpacing: -.8);
+
+  /// The card of what you told us.
+  static final cardName = anek(size: 26, weight: 800, width: 108, height: 1.1);
+  static final cardKey = anek(size: 16, weight: 600, height: 1.3, color: AdColors.muted);
+  static final cardValue = anek(size: 17, weight: 800, height: 1.3);
+
+  /// Childline's number on See you at 13.
+  static final helpline = anek(size: 24, weight: 800, width: 105, height: 1.1, color: AdColors.vermilion);
 }
 
 abstract final class AdSpace {

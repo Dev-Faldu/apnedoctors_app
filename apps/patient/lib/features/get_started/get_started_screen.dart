@@ -18,6 +18,7 @@ import '../../shared/widgets/fill_column.dart';
 import '../../shared/widgets/google_button.dart';
 import '../../shared/widgets/kp_icons.dart';
 import '../../shared/widgets/phone_field.dart';
+import '../../shared/widgets/page_moves.dart';
 import '../../shared/widgets/primary_button.dart';
 import '../launch/launch_store.dart';
 import '../welcome/doorway_hand_off.dart';
@@ -417,7 +418,7 @@ class _GetStartedScreenState extends ConsumerState<GetStartedScreen> with Single
     // while the code screen comes in on top, the toran, the back button and the a stay put there (it draws its own)
     // and everything else steps aside to the left; the number flies up
     final away = ModalRoute.of(context)?.secondaryAnimation ?? kAlwaysDismissedAnimation;
-    final back = _HideWhile(
+    final back = HideWhile(
       away: away,
       child: Transform.translate(
         offset: const Offset(-12, 0),
@@ -612,7 +613,7 @@ class _GetStartedScreenState extends ConsumerState<GetStartedScreen> with Single
         curve: Curves.easeInOutCubic,
         alignment: Alignment.topLeft,
         scale: aScale,
-        child: _HideWhile(
+        child: HideWhile(
           away: away,
           child: _AFlight(
             route: route,
@@ -638,7 +639,7 @@ class _GetStartedScreenState extends ConsumerState<GetStartedScreen> with Single
           child: _ToranSettle(
             route: route,
             reduced: reduced,
-            child: _HideWhile(
+            child: HideWhile(
               away: away,
               child: Toran(time: _clock, reduced: reduced),
             ),
@@ -646,7 +647,7 @@ class _GetStartedScreenState extends ConsumerState<GetStartedScreen> with Single
         ),
         FadeTransition(
           opacity: CurvedAnimation(parent: route, curve: const Interval(.12, .5)),
-          child: _StepLeft(
+          child: StepLeft(
             away: away,
             reduced: reduced,
             child: FillColumn(
@@ -882,43 +883,4 @@ class _OfflinePill extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Hidden while the next screen is on its way in (it draws the same thing in the same place).
-class _HideWhile extends StatelessWidget {
-  const _HideWhile({required this.away, required this.child});
-  final Animation<double> away;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: away,
-    child: child,
-    builder: (context, child) => Opacity(opacity: away.value > 0 ? 0 : 1, child: child),
-  );
-}
-
-/// Steps aside to the left (and fades) while the next screen comes in; comes back on Back.
-class _StepLeft extends StatelessWidget {
-  const _StepLeft({required this.away, required this.reduced, required this.child});
-  final Animation<double> away;
-  final bool reduced;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: away,
-    child: child,
-    builder: (context, child) {
-      final v = away.value;
-      if (v == 0) return child!;
-      final e = const Interval(0, .4, curve: Curves.easeOutCubic).transform(v);
-      return IgnorePointer(
-        child: Opacity(
-          opacity: 1 - e,
-          child: reduced ? child : Transform.translate(offset: Offset(-44 * e, 0), child: child),
-        ),
-      );
-    },
-  );
 }

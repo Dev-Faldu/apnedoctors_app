@@ -50,15 +50,21 @@ lib/
                        where the a stood when a door was tapped (the next screen carries it on)
     get_started/       GS1 (phone) and GS2 (code): the screens, their a (moods), the toran, marigold petals, the real
                        code sender and checker (Supabase phone OTP), CodeArrival (what moves between them)
+    about_you/         GS3 About you and G12 See you at 13: the steps (name, birth wheel, age dial, confirm sheet,
+                       gender, saved card), the speech bubble, the rules (ages in IST, names) and the real saver
+                       (`public.set_basics`), the draft kept until saved
   shared/
     indian_phone.dart  parses Indian mobile numbers as people type and paste them (GI-20..23)
+    headline_fit.dart  headline sizes that never break a word (narrow phones, large text)
     widgets/           the Getting-in kit: PhoneField (painted dot slots), CodeTiles (six painted tiles), PrimaryButton,
-                       GoogleButton, LivingA (moods), KpScaffold, FillColumn, HoldScroll, kp_icons
+                       GoogleButton, LivingA (moods), KpScaffold, FillColumn, HoldScroll, kp_icons, page_moves
+                       (HideWhile, StepLeft, SlideIn: the moves between screens)
 test/                  unit, widget and golden tests (edge-case IDs in names)
 tool/
   gen_opening_spec.py  writes opening_spec.g.dart and lockup_glyphs.g.dart from the board's own maths
   frames/              renders the app frame by frame (capture_test: the opening; walk_through_test: Welcome →
-                       Get started and back; code_flow_test: phone → code → verified; for videos)
+                       Get started and back; code_flow_test: phone → code → verified; about_you_flow_test: code →
+                       About you → saved; about_you_shots_test: each step as a still; for videos)
   design_compare/      renders the board frame by frame and diffs the two
 ```
 
@@ -72,6 +78,12 @@ and step everything else aside. Back reverses both. With reduced motion it is a 
 Get started → Code keeps the toran, the back button and the a perfectly still (the code screen draws them in the same
 places, on the same clock via `CodeArrival.clockFrom`, while the phone screen hides its own); the phone page steps
 aside to the left, the code page slides in from the right, and the number flies from its field into the pill.
+
+Code → About you: once the celebration has played, the code screen hands over its clock (`onVerified`) and the router
+replaces the stack (`go`); the code page steps aside while About you draws the toran and the a in the same places. Inside
+About you, steps slide past each other beside the still a (`_StepScope`, `_Part`), and the a is painted on top of
+everything by `_SeatFlight`, which reads its seat each frame, so it can follow the page into the top bar and hop down onto
+the confirm sheet.
 
 ## Large text (GI-60)
 

@@ -11,3 +11,12 @@ Future<void> connectBackend() => Supabase.initialize(url: Env.supabaseUrl, publi
 
 /// The one Supabase client. Everything that talks to the backend reads it from here.
 final supabaseProvider = Provider<SupabaseClient>((ref) => Supabase.instance.client);
+
+/// Whether a session is saved on this phone (read once, at launch). False when the backend hasn't started (tests).
+final signedInProvider = Provider<bool>((ref) {
+  try {
+    return ref.read(supabaseProvider).auth.currentSession != null;
+  } catch (_) {
+    return false;
+  }
+});

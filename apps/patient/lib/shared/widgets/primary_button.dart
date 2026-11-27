@@ -23,6 +23,9 @@ enum ButtonTone {
 
   /// Something done or settled (`.btn.done`): ink with paper text.
   ink,
+
+  /// The quieter second choice beside a main one (`.btn.ghost`): an ink outline, ink text.
+  outline,
 }
 
 /// The one main action on a screen: a vermilion pill.
@@ -82,13 +85,18 @@ class _PrimaryButtonState extends State<PrimaryButton> {
     final height = hero ? 58.0 : 56.0;
     final radius = Radius.circular(height / 2);
     final ink = widget.tone == ButtonTone.ink;
-    final fill = !on ? AdColors.disabledFill : (ink ? AdColors.ink : AdColors.vermilion);
+    final outline = widget.tone == ButtonTone.outline;
+    final fill = !on
+        ? AdColors.disabledFill
+        : outline
+        ? AdColors.paperClear
+        : (ink ? AdColors.ink : AdColors.vermilion);
     final style = switch ((hero, on)) {
       (true, true) => AdType.button,
       (true, false) => AdType.buttonDisabled,
       (false, true) => KpType.button,
       (false, false) => KpType.buttonOff,
-    }.copyWith(color: on ? (ink ? AdColors.paper : AdColors.white) : AdColors.muted);
+    }.copyWith(color: on ? (outline ? AdColors.ink : (ink ? AdColors.paper : AdColors.white)) : AdColors.muted);
     final shine = widget.shine;
     final busy = widget.busyLabel;
 
@@ -139,7 +147,11 @@ class _PrimaryButtonState extends State<PrimaryButton> {
                 : null,
             child: Container(
               constraints: BoxConstraints(minHeight: height),
-              decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.all(radius)),
+              decoration: BoxDecoration(
+                color: fill,
+                borderRadius: BorderRadius.all(radius),
+                border: outline && on ? Border.all(color: AdColors.ink, width: 1.5) : null,
+              ),
               child: ClipRRect(
                 borderRadius: BorderRadius.all(radius),
                 child: Stack(

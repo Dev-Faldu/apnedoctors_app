@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/app.dart' show Routes;
 
+import 'package:clock/clock.dart';
+
+import '../about_you/about_you_screen.dart';
 import '../opening/opening_screen.dart';
 import '../welcome/doctors_online.dart';
 import '../welcome/welcome_host.dart';
@@ -15,6 +18,7 @@ import 'launch_store.dart';
 /// - First open ever: the full opening into Welcome; `openedBefore` is set once Welcome is shown (GI-01).
 /// - Opened before (signed out): Welcome's own entrance (GI-03).
 /// - Reduced motion: Welcome's settled frame, no opening (GI-62); Welcome is shown at once, so it counts.
+/// - Under 13 on this phone (GI-16): See you at 13 until the lock has passed.
 /// The full router (`decideLaunch`) takes over from here as the sign-in screens arrive.
 class LaunchGate extends ConsumerWidget {
   const LaunchGate({super.key});
@@ -25,6 +29,8 @@ class LaunchGate extends ConsumerWidget {
     final online = ref.watch(doctorsOnlineProvider).value;
     final reduced = MediaQuery.disableAnimationsOf(context);
     final store = ref.read(launchStoreProvider);
+    final lock = store.under13Until;
+    if (lock != null && lock.isAfter(clock.now())) return const AboutYouScreen(start: AboutStep.tooYoung);
     void getStarted() => context.push(Routes.getStarted, extra: DoorwayHandOff.take());
     if (reduced) {
       if (!store.openedBefore) store.markOpened();

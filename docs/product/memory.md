@@ -3,9 +3,29 @@
 Read this at the start of every session. Newest sections first; they win over anything below them.
 Keep it current: when a decision changes, change it here in the same commit.
 
-Last updated: 2026-11-27 (code screen built).
+Last updated: 2026-11-27 (About you built).
 
-## Code screen (GS2) built (2026-11-27, newest)
+## About you (GS3) and See you at 13 (G12) built (2026-11-27, newest)
+- Founder: "make about you next, make it amazing … take reference and design it". Boards copied to
+  `docs/design/kalighat-pop/G05AboutYou/` (reference only). Spec: GS3 and G12 in `specs/getting-in.md`.
+- **Code → About you:** after "Verified" plays (1.6 s) the page changes around the still toran and a; the a says
+  "namaste!" in a speech bubble and then your name as you type it. The code screen leaves the stack (`go`, no way back).
+- **Order kept from the board:** name → born (month/year wheel, or age for adults) → confirm sheet → gender, so a child
+  is stopped before being asked anything else. Gender words from the board: Woman, Man, Something else, I'd rather not
+  say. Continue is docked in one place for every step, above the keyboard.
+- Design moves: vermilion wheel band with a painted white dot border and a rolling "That makes you 22."; the a hops onto
+  the confirm sheet; the chosen gender gets a painted dot border; saved: "nice to meet you, Priya!", petals, a card.
+- **Saving:** one call to `public.set_basics`. **That migration is still not deployed**, so on the live project saving
+  answers "We can't reach ApneDoctors right now. Try again in a minute." until the founder says yes to the deploy.
+- **Under 13:** only the birth date is sent; nothing kept; account waits 24 h (server), this phone 7 days
+  (`LaunchStore.under13Until`), signs out, draft deleted; See you at 13 with Childline 1098 (tap to call, `url_launcher`,
+  already a dependency of supabase_flutter). At launch the lock opens See you at 13 (GI-16, in `LaunchGate`).
+- **Resume:** answers are kept on the phone until saved (`BasicsDraft`); signed in with a draft, launch opens About you
+  (GI-05). The full `decideLaunch` router still isn't wired to launch; this is the small local version.
+- Names typed all lowercase are saved capitalised ("priya" → "Priya"); anything typed with capitals is kept exactly.
+- Continue on the saved card goes nowhere yet: Your data (GS5) / Parent consent (GS4) come next, after the founder's okay.
+
+## Code screen (GS2) built (2026-11-27)
 - Founder approved GS1 ("okay for now") and asked for every next screen to be "really amazing … sexy … aesthetic for
   Gen Z"; the canvas screens are references only ("make design very nice"). The canvas now holds the whole flow
   (Code, About you, Consent, Health, Meds, ABHA, Connect, Notify, Enter, Home, Ask camera/location, Find); boards copied
@@ -174,7 +194,10 @@ Last updated: 2026-11-27 (code screen built).
   what's approved. Ask before anything destructive, costly or hard to undo.
 
 ## Open questions for the founder
-- Approve the code screen (GS2) and the phone → code move; then About you (GS3).
+- Approve About you (GS3), See you at 13 (G12) and the code → About you move; then Your data (GS5) and Parent consent
+  (GS4).
+- **Deploy the two migrations** (`people_age_consent`, `pro_applications`): About you can't save on the live project
+  until then. 56 local database tests pass.
 - Raise the code life in Supabase from 60 s to 5 minutes (auth setting)?
 - Approve milestone 1 (videos in the session) and the six deliberate differences above.
 - Google sign-in keys (iOS client ID, web client ID, Android SHA-1/SHA-256): the founder sends them.

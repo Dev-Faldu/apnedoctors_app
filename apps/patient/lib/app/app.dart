@@ -6,7 +6,10 @@ import 'package:material_ui/material_ui.dart' show DefaultMaterialLocalizations;
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/backend/backend.dart';
 import '../core/theme/tokens.dart';
+import '../features/about_you/about_you_screen.dart';
+import '../features/about_you/basics.dart';
 import '../features/get_started/code_screen.dart';
 import '../features/get_started/code_verifier.dart';
 import '../features/get_started/get_started_screen.dart';
@@ -19,27 +22,41 @@ import '../shared/indian_phone.dart';
 abstract final class Routes {
   static const getStarted = '/get-started';
   static const code = '/code';
+  static const aboutYou = '/about-you';
 }
 
 final router = GoRouter(
-  redirect: restorePendingCode,
+  redirect: restoreOnLaunch,
   routes: [
     GoRoute(path: '/', builder: (context, state) => const LaunchGate()),
     GoRoute(path: Routes.getStarted, pageBuilder: getStartedPage),
     GoRoute(path: Routes.code, pageBuilder: codePage),
+    GoRoute(path: Routes.aboutYou, pageBuilder: aboutYouPage),
   ],
 );
 
 bool _restoreChecked = false;
 
-/// GI-29: a code sent in the last 10 minutes and not yet entered brings the app straight back to the code screen,
-/// once, at launch.
-String? restorePendingCode(BuildContext context, GoRouterState state) {
+/// Once, at launch, the app goes back to where someone left off:
+/// - a code sent in the last 10 minutes and not yet entered: the code screen (GI-29);
+/// - signed in with About you not yet saved: About you, with what they had typed (GI-05).
+/// An under-13 lock on this phone wins over both (GI-16): the launch gate shows See you at 13.
+String? restoreOnLaunch(BuildContext context, GoRouterState state) {
   if (_restoreChecked) return null;
   _restoreChecked = true;
   if (state.matchedLocation != '/') return null;
-  return _pendingArrival(context) == null ? null : Routes.code;
+  final container = ProviderScope.containerOf(context, listen: false);
+  final store = container.read(launchStoreProvider);
+  final lock = store.under13Until;
+  if (lock != null && lock.isAfter(clock.now())) return null;
+  if (_pendingArrival(context) != null) return Routes.code;
+  if (store.basicsDraft != null && container.read(signedInProvider)) return Routes.aboutYou;
+  return null;
 }
+
+/// For tests: run the launch restore again.
+@visibleForTesting
+void resetLaunchRestore() => _restoreChecked = false;
 
 CodeArrival? _pendingArrival(BuildContext context) {
   final pending = ProviderScope.containerOf(context, listen: false).read(launchStoreProvider).pendingCode;
@@ -81,7 +98,31 @@ Page<void> codePage(BuildContext context, GoRouterState state) {
         arrival: arrival,
         onBack: () => context.canPop() ? context.pop() : context.go(Routes.getStarted, extra: number),
         onChange: () => context.canPop() ? context.pop('change') : context.go(Routes.getStarted, extra: number),
+        onVerified: (clockAt) {
+          // from here on, closing the app comes back to About you (GI-05)
+          final store = ProviderScope.containerOf(context, listen: false).read(launchStoreProvider);
+          store.setBasicsDraft(store.basicsDraft ?? const BasicsDraft().toJson());
+          context.go(Routes.aboutYou, extra: clockAt);
+        },
       ),
+    ),
+    transitionsBuilder: (context, animation, secondary, child) => child,
+  );
+}
+
+/// About you (GS3). From the code screen the page changes around the still toran and a (0.76 s): the code page steps
+/// aside, the a greets you. Signed in, the code screen and the doors before it are gone: there is no going back to them.
+Page<void> aboutYouPage(BuildContext context, GoRouterState state) {
+  final store = ProviderScope.containerOf(context, listen: false).read(launchStoreProvider);
+  return CustomTransitionPage(
+    key: state.pageKey,
+    transitionDuration: const Duration(milliseconds: 760),
+    reverseTransitionDuration: const Duration(milliseconds: 500),
+    child: AboutYouScreen(
+      clockFrom: state.extra is double ? state.extra! as double : 0,
+      draft: BasicsDraft.fromJson(store.basicsDraft),
+      // Your data (GS5) or a parent's yes (GS4) comes next, once designed
+      onDone: (_) {},
     ),
     transitionsBuilder: (context, animation, secondary, child) => child,
   );

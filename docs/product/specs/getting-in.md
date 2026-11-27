@@ -136,21 +136,52 @@ Built 2026-11-27. Reference board: `docs/design/kalighat-pop/G04Code/` (a refere
 - When the person came from a hospital's QR (GI-19), the trouble line also says "Having trouble? Go to the reception desk."
 
 ### GS3 · G7 About you
-- **"what should we call you?"**: first name required, last name optional.
-- **"how do you describe yourself?"**: Woman, Man, Another identity, Prefer not to say. Why: "Some care differs by body. Only your doctors see this."
-- **"when were you born?"**: month and year wheels.
-  - **"Only know your age?"** opens a single age field instead. Allowed for adults only. The age is stored as an estimate (birth year worked out, no month, marked estimated) and shown as "about 52".
-  - An estimated age under 18 is not accepted: "For anyone under 18 we need the birth month and year, so we can follow the law on consent." Back to the wheels.
-- Why we ask: "Doctors need your age. We never show it to anyone else."
-- Confirm before saving: "Born in March 2009? You can't change this later." (or "About 52? You can't change this later.") with **Yes, that's right** and **Change**.
-- Age is computed on the server in IST from month and year (an estimate counts as its year). Then:
-  - 18+ → GS5;
-  - 13–17 → GS4;
-  - under 13 → **See you at 13** (G12).
+Built 2026-11-27. Reference board: `docs/design/kalighat-pop/G05AboutYou/` (a reference, not a copy).
+- **Arriving from GS2:** once "Verified" has played (the a jumps, petals, 1.6 s), the page changes around a still toran
+  and a: the code page steps aside, the step dots and the question slide in, Continue rises, and the a says
+  **"namaste!"** in a speech bubble. The code screen is gone from the stack: no way back to it.
+- Three steps (dots: done vermilion, current a long ink dash), always in this order, so a child is stopped before being
+  asked anything else: name, when you were born, which fits you best. Continue is docked in one place for every step,
+  above the keyboard when it is open (GI-63). Back goes to the previous step and keeps every answer (GI-64).
+- **"what should we call you?"**: First name (required) and Last name · optional, labels inside the boxes. The bubble
+  says the name back as it is typed ("namaste, Priya!", the name in vermilion) and the a hops when it first hears it.
+  Letters in any script, with spaces, dots, apostrophes and hyphens between them; a digit or symbol: "Just letters,
+  please. Names don't have numbers or symbols." A name typed all in small letters is saved with capitals ("priya" →
+  "Priya"); anything typed with capitals is kept exactly. With the keyboard open on a short phone, the a and its bubble
+  glide into the top bar and the question folds to one line.
+- **"when were you born?"**: month and year wheels (a vermilion band with a painted white dot border; a soft tick per
+  row; screen readers get two adjustable controls). Why: "Doctors need your age. We never show it to anyone else."
+  Under it: "That makes you 22." (the number rolls). This year: "That's this year. Pick the year you were born." A
+  month still to come: "That date hasn't happened yet." Both keep Continue off (GI-40).
+  - **"Only know your age?"** → **"about how old are you?"**: a big age between − and + (hold to run, drag the number),
+    18–120. "Doctors will see "about 52", so they know it's an estimate. Under 18, we need the birth month and year."
+    Below 18 the note turns to: "For anyone under 18 we need the birth month and year, so we can follow the law on
+    consent." with **I know my birth month and year** (GI-46). Saved as an age, never a made-up month.
+- **Confirm (a sheet):** "born in March 2004?" (or "about 52?"); "You can't change this later, so every doctor sees the
+  right age. If it's wrong, our support team can fix it." Over 100 it starts "That makes you 104." and the second yes
+  is sent (GI-40). The a hops down onto the sheet and back. **Yes, that's right** / **Change it**.
+- **"which fits you best?"**: Woman, Man, Something else, I'd rather not say. "Some care depends on it, like which tests
+  a doctor suggests. Only you and your doctors see it. You can change it any time." The chosen one turns ink with a
+  painted dot border.
+- **Saving:** everything at once through `public.set_basics` (the server checks every rule again and counts the age in
+  IST); "Saving" on the button, "This is taking longer than usual." after 10 s (GI-66), "We can't reach ApneDoctors
+  right now. Try again in a minute." on failure (GI-67). A refusal goes back to its question with plain words (birth
+  date already saved: GI-42; an estimate under 18: GI-46).
+- **Saved:** "nice to meet you, Priya!", marigold petals, a card of what was saved (the birth date with a lock), and the
+  next step in words: adults "Next: how we look after your health data." (GS5); teens "You're 15, so next a parent
+  says yes before you see doctors or order medicines." (GS4). Continue leads there once those screens are built.
+- Until it is saved, what was typed and the step are kept on the phone (`BasicsDraft`); closing the app and opening it
+  again, signed in, comes back here (GI-05). A code still waiting wins (GI-29); an under-13 lock wins over both (GI-16).
 
 ### G12 See you at 13
-- "ApneDoctors is for 13 and up. A parent can add you to their family so you're still looked after." Childline 1098.
-- Nothing about the child is saved. The account is blocked for 24 h and the device for 7 days (GI-41).
+- After "Yes, that's right" with a birth date under 13, only the birth date is sent (no name, no gender), the server
+  keeps nothing and makes the account wait 24 h, this phone waits 7 days, the draft is deleted and the phone signs out.
+  Even with no network, this phone stops here. If the server counts 13 or more (the phone's clock is off, GI-54), the
+  steps carry on (GI-41).
+- **"see you at 13."** "ApneDoctors is for people 13 and up. Until then, a parent can add you to their family here and
+  book care for you." A card: "Want to talk to someone? Childline, free, any time. 1098" (tap to call). No button to
+  carry on, and never a hint of which year would pass.
+- At launch, while this phone's lock lasts, the app opens here (GI-16).
 
 ### GS4 · G11 Parent consent (13–17 only)
 - **"one quick yes from a parent."**

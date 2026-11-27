@@ -38,6 +38,15 @@ abstract class LaunchStore {
 
   /// Null forgets it (verified, or the number changed).
   Future<void> setPendingCode(PendingCode? code);
+
+  /// About you, part-way through (JSON, see `BasicsDraft`): what was typed and where they were, so closing the app
+  /// loses nothing (GI-05, GI-64). Null once it is saved.
+  String? get basicsDraft;
+  Future<void> setBasicsDraft(String? json);
+
+  /// Under 13 on this phone: See you at 13 at every launch until then (GI-16, GI-41).
+  DateTime? get under13Until;
+  Future<void> setUnder13Until(DateTime? until);
 }
 
 class PrefsLaunchStore implements LaunchStore {
@@ -60,6 +69,27 @@ class PrefsLaunchStore implements LaunchStore {
   @override
   Future<void> setPendingCode(PendingCode? code) =>
       code == null ? _prefs.remove(pendingKey) : _prefs.setString(pendingKey, jsonEncode(code.toJson()));
+
+  static const draftKey = 'apnedoctors.basics_draft';
+
+  @override
+  String? get basicsDraft => _prefs.getString(draftKey);
+
+  @override
+  Future<void> setBasicsDraft(String? json) =>
+      json == null ? _prefs.remove(draftKey) : _prefs.setString(draftKey, json);
+
+  static const under13Key = 'apnedoctors.under13_until';
+
+  @override
+  DateTime? get under13Until {
+    final ms = _prefs.getInt(under13Key);
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
+  @override
+  Future<void> setUnder13Until(DateTime? until) =>
+      until == null ? _prefs.remove(under13Key) : _prefs.setInt(under13Key, until.millisecondsSinceEpoch);
 }
 
 class MemoryLaunchStore implements LaunchStore {
@@ -76,6 +106,18 @@ class MemoryLaunchStore implements LaunchStore {
 
   @override
   Future<void> setPendingCode(PendingCode? code) async => pendingCode = code;
+
+  @override
+  String? basicsDraft;
+
+  @override
+  Future<void> setBasicsDraft(String? json) async => basicsDraft = json;
+
+  @override
+  DateTime? under13Until;
+
+  @override
+  Future<void> setUnder13Until(DateTime? until) async => under13Until = until;
 }
 
 /// Overridden in main with the phone's own storage; on its own (tests, tools) it remembers in memory.

@@ -116,6 +116,21 @@ class Profiles(GettingIn):
         self.assertEqual(self.error('select public.set_basics(%s, null, %s, %s, %s)', 'Priya', 'woman',
                                     *self.years_ago(30))[0], 'age_blocked')
 
+    def test_gi_41_the_apps_check_sends_only_the_birth_date(self):
+        # About you asks with the birth date alone, so nothing about a child ever leaves the phone
+        u = self.new_user()
+        self.as_user(u)
+        y, m = self.years_ago(9)
+        r = self.call('select public.set_basics(null, null, null, %s, %s)', y, m)
+        self.assertEqual(r['result'], 'under_13')
+        p = self.profile(u)
+        self.assertEqual((p['first_name'], p['gender'], p['birth_year']), (None, None, None))
+        # 13 or older (the phone's clock was off): the server asks for the rest, and the app carries on
+        v = self.new_user('919822222222')
+        self.as_user(v)
+        self.assertEqual(self.error('select public.set_basics(null, null, null, %s, %s)', *self.years_ago(20))[0],
+                         'name_needed')
+
     def test_g7_only_know_your_age_is_stored_as_an_estimate(self):
         u = self.new_user()
         r = self.basics(u, age=52)
