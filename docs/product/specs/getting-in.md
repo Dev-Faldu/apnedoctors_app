@@ -104,12 +104,35 @@ asked for the best design, not the board's exact pixels).
 - Android back goes to Welcome.
 
 ### GS2 · G4 Code (OTP)
-- Headline: **"check your messages."**
-- Line: "We sent a 6-digit code to +91 98765 43210." with **Change**.
-- **Code boxes:** 6 boxes. iOS autofill hint `oneTimeCode`; Android SMS User Consent API (no SMS permission needed). Pasting a 6-digit code fills all boxes.
-- It submits by itself when the 6th digit lands, exactly once.
-- "Resend code in 0:30" turns into **Resend code**, with a longer wait after each resend.
-- On success the "a" turns *happy*, with a light haptic.
+Built 2026-11-27. Reference board: `docs/design/kalighat-pop/G04Code/` (a reference, not a copy).
+- **Arriving from GS1:** after a beat of "Code sent", the page changes around a still toran, back button and "a": the
+  phone page steps aside to the left, the code page slides in from the right, and the phone number lifts out of its
+  field and flies up into the line below the headline (0.7 s). Back reverses it and the number flies home.
+- Headline: **"check your messages."** (sized to sit beside the "a"; with large text the "a" moves to the top bar and
+  the headline grows only as far as its longest word fits).
+- Line: "We texted a 6-digit code to" and a pill **+91 98765 43210 · Change** (tap to change, GI-31).
+- **Code tiles:** six painted tiles (3 + 3) in the language of the number field: an empty tile holds a dot, the next
+  one the vermilion caret, digits drop in. One invisible text field types, pastes and autofills (`oneTimeCode`);
+  screen readers hear one field, "6-digit code".
+- It checks by itself when the 6th digit lands, exactly once (no button). Checking: the tiles ripple in a slow wave,
+  the "a" looks up, "Checking…".
+- **Verified:** the tiles turn green one after another, the "a" jumps for joy twice, marigold petals go up,
+  "Verified. You're signed in." (Supabase `verifyOTP`; the session is saved). About you (GS3) comes next.
+- **Wrong (GI-25):** red tiles shake, then the digits drop out (the wrong code stays visible for 0.7 s, reduced motion
+  too). "That code didn't match. 2 tries left." Our own cap of 3 per code; then "That's 3 tries. Send a new code to try
+  again." with a Send a new code button.
+- **Expired (GI-27):** Supabase answers the same for wrong and expired codes, so a rejected code older than the code's
+  life (60 s, as set in Supabase) is called expired: "That code has expired. Send a new one." with one tap.
+- **Too many tries (GI-26):** the server's real wait, counting down; tiles locked.
+- **A new code:** "Send a new code in 0:42", then a pill to send it. Waits grow: 1, 2, then 3 minutes (the server allows
+  one a minute).
+- **Didn't get it? (GI-28):** after 30 s a card offers Send it again (with the live countdown until allowed), Check the
+  number (back to GS1, GI-31) and Use Google instead (GI-37's line until the keys arrive).
+- Keyboard open on a short phone (GI-63): the "a" glides into the top bar, the headline folds to one line, and the
+  tiles and the line under them stay above the keyboard.
+- The sent code is kept for 10 minutes (number, time, sends); reopening the app returns here (GI-29). Back keeps the
+  number on GS1 (GI-30).
+- Android SMS User Consent API: not wired yet (needs a native plugin, tested on a real phone).
 - When the person came from a hospital's QR (GI-19), the trouble line also says "Having trouble? Go to the reception desk."
 
 ### GS3 · G7 About you

@@ -19,6 +19,9 @@ enum GsMood {
 
   /// Sending: leans back and looks up.
   thinking,
+
+  /// You're in: happy eyes and cheeks, and the whole a jumps for joy, twice, with a squash as it lands.
+  celebrating,
 }
 
 /// The living "a" of Get started, drawn from the board's SVG (`svg.amark`, viewBox 168 66 140 124 in a 100 × 88 box).
@@ -90,11 +93,12 @@ class _GetStartedAState extends State<GetStartedA> {
   GsMood? _fromFace;
   double _faceAt = -10;
   double _happyAt = -10;
+  double _celebrateAt = -10;
 
   static double _leanFor(GsMood m) => switch (m) {
     GsMood.listening || GsMood.worried => -7,
     GsMood.thinking => 4,
-    GsMood.happy => 0,
+    GsMood.happy || GsMood.celebrating => 0,
   };
 
   static Offset _eyesFor(GsMood m, int digits) =>
@@ -118,12 +122,13 @@ class _GetStartedAState extends State<GetStartedA> {
       }
       _face = widget.mood;
       if (widget.mood == GsMood.happy) _happyAt = now;
+      if (widget.mood == GsMood.celebrating) _celebrateAt = now;
     }
   }
 
   static int _kind(GsMood m) => switch (m) {
     GsMood.listening || GsMood.thinking => 0,
-    GsMood.happy => 1,
+    GsMood.happy || GsMood.celebrating => 1,
     GsMood.worried => 2,
   };
 
@@ -234,6 +239,15 @@ class _APainter extends CustomPainter {
         final b = const CssAnim(4.2, delay: 1, infinite: true, fill: Fill.none, curve: cssEaseInOut);
         final p = b.progress(t);
         if (p != null) canvas.scale(_breath.at(p, 0, b.curve), _breath.at(p, 1, b.curve));
+        // two jumps for joy (1.1 s), squashing as it lands
+        final j = (t - s._celebrateAt) / 1.1;
+        if (s._face == GsMood.celebrating && j >= 0 && j < 1) {
+          final hop = (j * 2) % 1;
+          final height = j < .5 ? 26.0 : 14.0;
+          canvas.translate(0, -height * math.sin(math.pi * hop));
+          final squash = hop < .12 || hop > .9 ? .08 * (1 - (hop < .12 ? hop / .12 : (1 - hop) / .1)) : 0.0;
+          canvas.scale(1 + squash, 1 - squash);
+        }
       }
     });
 
@@ -276,6 +290,7 @@ class _APainter extends CustomPainter {
         _eyes(canvas, const Offset(214, 124), const Offset(246, 124), 8, t, alpha);
         canvas.restore();
       case GsMood.happy:
+      case GsMood.celebrating:
         canvas.save();
         if (!reduced) {
           final a = CssAnim(.7, delay: s._happyAt, fill: Fill.none, curve: _hopCurve);

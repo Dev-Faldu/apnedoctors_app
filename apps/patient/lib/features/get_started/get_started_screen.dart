@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
@@ -18,7 +19,9 @@ import '../../shared/widgets/google_button.dart';
 import '../../shared/widgets/kp_icons.dart';
 import '../../shared/widgets/phone_field.dart';
 import '../../shared/widgets/primary_button.dart';
+import '../launch/launch_store.dart';
 import '../welcome/doorway_hand_off.dart';
+import 'code_verifier.dart';
 import 'get_started_a.dart';
 import 'phone_code_sender.dart';
 import 'toran.dart';
@@ -63,6 +66,7 @@ class GetStartedScreen extends ConsumerStatefulWidget {
     this.onTerms,
     this.onPrivacy,
     this.onCodeSent,
+    this.openCode,
   });
 
   /// The page rises in as it opens.
@@ -79,8 +83,11 @@ class GetStartedScreen extends ConsumerStatefulWidget {
   final VoidCallback? onTerms;
   final VoidCallback? onPrivacy;
 
-  /// The code is on its way to this number (GS2 takes over from here).
+  /// The code is on its way to this number.
   final ValueChanged<PhoneOk>? onCodeSent;
+
+  /// Opens the code screen (GS2) and waits until it comes back: null for Back, 'change' for Change (GI-30, GI-31).
+  final Future<String?> Function(CodeArrival arrival)? openCode;
 
   @override
   ConsumerState<GetStartedScreen> createState() => _GetStartedScreenState();
@@ -205,6 +212,7 @@ class _GetStartedScreenState extends ConsumerState<GetStartedScreen> with Single
         case CodeSent():
           _phase = _Phase.sent;
           _sentTo = p;
+          _sentAt = clock.now();
         case SendWait(:final wait):
           _phase = _Phase.typing;
           if (wait == null) {
@@ -217,7 +225,49 @@ class _GetStartedScreenState extends ConsumerState<GetStartedScreen> with Single
           _error = message;
       }
     });
-    if (result is CodeSent) widget.onCodeSent?.call(p);
+    if (result is CodeSent) {
+      ref.read(launchStoreProvider).setPendingCode(PendingCode(e164: p.e164, sentAt: _sentAt!));
+      widget.onCodeSent?.call(p);
+      await _openCode(p);
+    }
+  }
+
+  DateTime? _sentAt;
+
+  /// A beat of "Code sent", then the code screen. The number lifts out of the field and flies up into it.
+  Future<void> _openCode(PhoneOk p) async {
+    final open = widget.openCode;
+    if (open == null) return;
+    await Future<void>.delayed(const Duration(milliseconds: 420));
+    if (!mounted || _phase != _Phase.sent) return;
+    final arrival = CodeArrival(phone: p, sentAt: _sentAt!, numberFrom: _numberRect(), clockFrom: _clock.value);
+    final result = await open(arrival);
+    if (!mounted) return;
+    setState(() {
+      _phase = _Phase.typing; // the number stays, ready to send again or change (GI-30)
+      _sentTo = null;
+    });
+    if (result == 'change') _focus.requestFocus();
+  }
+
+  /// Where the phone number's digits are on screen.
+  Rect? _numberRect() {
+    RenderDigitSlots? found;
+    void visit(RenderObject o) {
+      if (found != null) return;
+      if (o is RenderDigitSlots) {
+        found = o;
+        return;
+      }
+      o.visitChildren(visit);
+    }
+
+    final root = _fieldKey.currentContext?.findRenderObject();
+    if (root == null) return null;
+    visit(root);
+    final f = found;
+    if (f == null || !f.attached || !f.hasSize) return null;
+    return f.localToGlobal(Offset.zero) & f.size;
   }
 
   void _startWait(Duration wait) {
@@ -364,9 +414,15 @@ class _GetStartedScreenState extends ConsumerState<GetStartedScreen> with Single
       );
     }
 
-    final back = Transform.translate(
-      offset: const Offset(-12, 0),
-      child: KpBackButton(onTap: _back, label: 'Back to Welcome'),
+    // while the code screen comes in on top, the toran, the back button and the a stay put there (it draws its own)
+    // and everything else steps aside to the left; the number flies up
+    final away = ModalRoute.of(context)?.secondaryAnimation ?? kAlwaysDismissedAnimation;
+    final back = _HideWhile(
+      away: away,
+      child: Transform.translate(
+        offset: const Offset(-12, 0),
+        child: KpBackButton(onTap: _back, label: 'Back to Welcome'),
+      ),
     );
     final barHeight = compact ? 56.0 : 48.0;
 
@@ -445,6 +501,7 @@ class _GetStartedScreenState extends ConsumerState<GetStartedScreen> with Single
               onChanged: _changed,
               onSubmitted: (_) => _send(),
               holdScroll: true,
+              away: away,
             ),
           ),
         ),
@@ -555,15 +612,18 @@ class _GetStartedScreenState extends ConsumerState<GetStartedScreen> with Single
         curve: Curves.easeInOutCubic,
         alignment: Alignment.topLeft,
         scale: aScale,
-        child: _AFlight(
-          route: route,
-          from: flight,
-          child: GetStartedA(
-            time: _clock,
-            mood: _mood(online),
-            digits: _digitCount,
-            entrance: entrance && flight == null,
-            reduced: reduced,
+        child: _HideWhile(
+          away: away,
+          child: _AFlight(
+            route: route,
+            from: flight,
+            child: GetStartedA(
+              time: _clock,
+              mood: _mood(online),
+              digits: _digitCount,
+              entrance: entrance && flight == null,
+              reduced: reduced,
+            ),
           ),
         ),
       ),
@@ -578,18 +638,25 @@ class _GetStartedScreenState extends ConsumerState<GetStartedScreen> with Single
           child: _ToranSettle(
             route: route,
             reduced: reduced,
-            child: Toran(time: _clock, reduced: reduced),
+            child: _HideWhile(
+              away: away,
+              child: Toran(time: _clock, reduced: reduced),
+            ),
           ),
         ),
         FadeTransition(
           opacity: CurvedAnimation(parent: route, curve: const Interval(.12, .5)),
-          child: FillColumn(
-            key: _pageKey,
-            minHeight: height,
-            top: Padding(padding: EdgeInsets.fromLTRB(AdSpace.side, safeTop, AdSpace.side, 0), child: top),
-            bottom: Padding(
-              padding: EdgeInsets.fromLTRB(AdSpace.side, 0, AdSpace.side, math.max(24, mq.padding.bottom)),
-              child: footer,
+          child: _StepLeft(
+            away: away,
+            reduced: reduced,
+            child: FillColumn(
+              key: _pageKey,
+              minHeight: height,
+              top: Padding(padding: EdgeInsets.fromLTRB(AdSpace.side, safeTop, AdSpace.side, 0), child: top),
+              bottom: Padding(
+                padding: EdgeInsets.fromLTRB(AdSpace.side, 0, AdSpace.side, math.max(24, mq.padding.bottom)),
+                child: footer,
+              ),
             ),
           ),
         ),
@@ -815,4 +882,43 @@ class _OfflinePill extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Hidden while the next screen is on its way in (it draws the same thing in the same place).
+class _HideWhile extends StatelessWidget {
+  const _HideWhile({required this.away, required this.child});
+  final Animation<double> away;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: away,
+    child: child,
+    builder: (context, child) => Opacity(opacity: away.value > 0 ? 0 : 1, child: child),
+  );
+}
+
+/// Steps aside to the left (and fades) while the next screen comes in; comes back on Back.
+class _StepLeft extends StatelessWidget {
+  const _StepLeft({required this.away, required this.reduced, required this.child});
+  final Animation<double> away;
+  final bool reduced;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: away,
+    child: child,
+    builder: (context, child) {
+      final v = away.value;
+      if (v == 0) return child!;
+      final e = const Interval(0, .4, curve: Curves.easeOutCubic).transform(v);
+      return IgnorePointer(
+        child: Opacity(
+          opacity: 1 - e,
+          child: reduced ? child : Transform.translate(offset: Offset(-44 * e, 0), child: child),
+        ),
+      );
+    },
+  );
 }

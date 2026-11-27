@@ -48,16 +48,17 @@ lib/
     opening/           native splash → splash → hand-off (N00Splash); opening_spec.g.dart is generated
     welcome/           Welcome (N01Welcome): doorway painter, timings, doctors-online chip; doorway_hand_off.dart:
                        where the a stood when a door was tapped (the next screen carries it on)
-    get_started/       GS1: the screen, its a (four moods), the toran, the real code sender (Supabase phone OTP)
+    get_started/       GS1 (phone) and GS2 (code): the screens, their a (moods), the toran, marigold petals, the real
+                       code sender and checker (Supabase phone OTP), CodeArrival (what moves between them)
   shared/
     indian_phone.dart  parses Indian mobile numbers as people type and paste them (GI-20..23)
-    widgets/           the Getting-in kit: PhoneField (painted dot slots), OtpBoxes, PrimaryButton, GoogleButton,
-                       LivingA (moods), KpScaffold, FillColumn (footer pinned, scrolls when taller), kp_icons
+    widgets/           the Getting-in kit: PhoneField (painted dot slots), CodeTiles (six painted tiles), PrimaryButton,
+                       GoogleButton, LivingA (moods), KpScaffold, FillColumn, HoldScroll, kp_icons
 test/                  unit, widget and golden tests (edge-case IDs in names)
 tool/
   gen_opening_spec.py  writes opening_spec.g.dart and lockup_glyphs.g.dart from the board's own maths
   frames/              renders the app frame by frame (capture_test: the opening; walk_through_test: Welcome →
-                       Get started and back, for a video)
+                       Get started and back; code_flow_test: phone → code → verified; for videos)
   design_compare/      renders the board frame by frame and diffs the two
 ```
 
@@ -67,6 +68,10 @@ Each door on Welcome opens its own path, and the move is part of the design. Wel
 through the doorway: Get started's route animation brings its paper, toran and page in and flies the a from where
 Welcome left it (`DoorwayHandOff`); Welcome reads its own route's secondary animation to grow the doorway past you
 and step everything else aside. Back reverses both. With reduced motion it is a cross-fade.
+
+Get started → Code keeps the toran, the back button and the a perfectly still (the code screen draws them in the same
+places, on the same clock via `CodeArrival.clockFrom`, while the phone screen hides its own); the phone page steps
+aside to the left, the code page slides in from the right, and the number flies from its field into the pill.
 
 ## Large text (GI-60)
 

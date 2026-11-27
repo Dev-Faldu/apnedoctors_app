@@ -11,6 +11,7 @@ import '../../core/motion/keyframes.dart';
 import '../../core/theme/css_paragraph.dart';
 import '../../core/theme/tokens.dart';
 import '../indian_phone.dart';
+import 'hold_scroll.dart';
 import 'kp_icons.dart';
 
 /// How the field's box looks.
@@ -39,6 +40,7 @@ class PhoneField extends StatefulWidget {
     this.message,
     this.messageIsError = false,
     this.holdScroll = false,
+    this.away,
   });
 
   /// Holds the ten digits as typed (`98765 43210`).
@@ -66,6 +68,9 @@ class PhoneField extends StatefulWidget {
   /// The screen decides what scrolls into view when the keyboard opens (the text field would otherwise scroll itself
   /// into view straight away, before the screen's layout has settled).
   final bool holdScroll;
+
+  /// While above zero, the digits are elsewhere (flying up into the next screen) and the slots leave them out.
+  final ValueListenable<double>? away;
 
   @override
   State<PhoneField> createState() => _PhoneFieldState();
@@ -307,6 +312,7 @@ class _PhoneFieldState extends State<PhoneField> with TickerProviderStateMixin {
       color: widget.locked ? AdColors.muted : AdColors.ink,
       reduced: _reduced,
       scaler: scaler,
+      away: widget.away,
     );
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -339,7 +345,7 @@ class _PhoneFieldState extends State<PhoneField> with TickerProviderStateMixin {
                   ExcludeSemantics(child: slots),
                   // the real input: invisible, but it types, pastes, autofills and speaks
                   Positioned.fill(
-                    child: _HoldScroll(
+                    child: HoldScroll(
                       hold: widget.holdScroll,
                       child: Opacity(
                         opacity: 0,
@@ -392,33 +398,6 @@ class _PhoneFieldState extends State<PhoneField> with TickerProviderStateMixin {
   }
 }
 
-/// Stops "show me on screen" requests from the text field below it, when the screen manages scrolling itself.
-class _HoldScroll extends SingleChildRenderObjectWidget {
-  const _HoldScroll({required this.hold, required super.child});
-  final bool hold;
-
-  @override
-  _RenderHoldScroll createRenderObject(BuildContext context) => _RenderHoldScroll(hold);
-
-  @override
-  void updateRenderObject(BuildContext context, _RenderHoldScroll renderObject) => renderObject.hold = hold;
-}
-
-class _RenderHoldScroll extends RenderProxyBox {
-  _RenderHoldScroll(this.hold);
-  bool hold;
-
-  @override
-  void showOnScreen({
-    RenderObject? descendant,
-    Rect? rect,
-    Duration duration = Duration.zero,
-    Curve curve = Curves.ease,
-  }) {
-    if (!hold) super.showOnScreen(descendant: descendant, rect: rect, duration: duration, curve: curve);
-  }
-}
-
 /// Ten slots for the digits: five, a breath, five. An empty slot shows a painted dot; a typed digit drops in
 /// (0.22 s) and takes the dot's place; a deleted digit gives its dot back. The caret (vermilion, blinking) waits in
 /// the next slot.
@@ -434,7 +413,21 @@ class DigitSlots extends LeafRenderObjectWidget {
     required this.color,
     required this.reduced,
     required this.scaler,
+    this.away,
   });
+
+  /// A number at rest: every digit landed, no caret (the "sent to" pill, the number flying between screens).
+  DigitSlots.still({super.key, required this.digits, this.color = AdColors.ink, this.scaler = TextScaler.noScaling})
+    : clock = _stillClock,
+      born = _landed,
+      dotBack = _landed,
+      lastEdit = -10,
+      caret = false,
+      reduced = true,
+      away = null;
+
+  static final _stillClock = ValueNotifier<double>(0);
+  static const _landed = [-10.0, -10.0, -10.0, -10.0, -10.0, -10.0, -10.0, -10.0, -10.0, -10.0];
 
   final ValueListenable<double> clock;
   final String digits;
@@ -445,6 +438,9 @@ class DigitSlots extends LeafRenderObjectWidget {
   final Color color;
   final bool reduced;
   final TextScaler scaler;
+
+  /// While above zero, the digits are left out (they are flying elsewhere).
+  final ValueListenable<double>? away;
 
   /// One slot: the widest digit plus a little air.
   static double slotAt(TextScaler s) {
@@ -485,6 +481,10 @@ class RenderDigitSlots extends RenderBox {
       _config.clock.removeListener(markNeedsPaint);
       v.clock.addListener(markNeedsPaint);
     }
+    if (v.away != _config.away && attached) {
+      _config.away?.removeListener(markNeedsPaint);
+      v.away?.addListener(markNeedsPaint);
+    }
     final colour = v.color != _config.color;
     _config = v;
     if (relayout || colour) _measure();
@@ -523,11 +523,13 @@ class RenderDigitSlots extends RenderBox {
   void attach(PipelineOwner owner) {
     super.attach(owner);
     _config.clock.addListener(markNeedsPaint);
+    _config.away?.addListener(markNeedsPaint);
   }
 
   @override
   void detach() {
     _config.clock.removeListener(markNeedsPaint);
+    _config.away?.removeListener(markNeedsPaint);
     super.detach();
   }
 
@@ -562,10 +564,12 @@ class RenderDigitSlots extends RenderBox {
     final t = c.clock.value;
     final mid = offset.dy + size.height / 2;
     final n = math.min(c.digits.length, 10);
+    final gone = (c.away?.value ?? 0) > 0;
 
     for (var i = 0; i < 10; i++) {
       final cx = offset.dx + _slotLeft(i) + _slot / 2;
       if (i < n) {
+        if (gone) continue;
         final glyph = _glyph(c.digits[i]);
         final p = c.reduced ? 1.0 : ((t - c.born[i]) / .22).clamp(0.0, 1.0);
         final e = _drop.transform(p);
@@ -588,7 +592,7 @@ class RenderDigitSlots extends RenderBox {
     }
 
     // the caret: solid while typing, then a slow blink (on .53 s, off .53 s)
-    if (c.caret) {
+    if (c.caret && !gone) {
       final since = t - c.lastEdit;
       final on = c.reduced || since < .5 || (since % 1.06) < .53;
       if (on) {

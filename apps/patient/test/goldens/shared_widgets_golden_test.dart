@@ -7,7 +7,7 @@ import 'package:apnedoctors/core/theme/tokens.dart';
 import 'package:apnedoctors/shared/widgets/google_button.dart';
 import 'package:apnedoctors/shared/widgets/kp_scaffold.dart';
 import 'package:apnedoctors/shared/widgets/living_a.dart';
-import 'package:apnedoctors/shared/widgets/otp_boxes.dart';
+import 'package:apnedoctors/shared/widgets/code_tiles.dart';
 import 'package:apnedoctors/shared/widgets/phone_field.dart';
 import 'package:apnedoctors/shared/widgets/primary_button.dart';
 
@@ -37,17 +37,15 @@ Widget galleryFields() => KpScaffold(
       _label('Not a mobile number (GI-21)'),
       PhoneField(controller: TextEditingController(text: '58765 43210')),
       _label('Code, three digits in'),
-      OtpBoxes(
+      CodeTiles(
         controller: TextEditingController(text: '482'),
         onCompleted: (_) {},
-        autofocus: false,
       ),
       _label('Wrong code (GI-25)'),
-      OtpBoxes(
+      CodeTiles(
         controller: TextEditingController(text: '482915'),
         onCompleted: (_) {},
-        autofocus: false,
-        error: true,
+        look: CodeLook.wrong,
       ),
     ],
   ),

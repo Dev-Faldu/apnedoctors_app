@@ -3,9 +3,28 @@
 Read this at the start of every session. Newest sections first; they win over anything below them.
 Keep it current: when a decision changes, change it here in the same commit.
 
-Last updated: 2026-11-26 (Get started built).
+Last updated: 2026-11-27 (code screen built).
 
-## Get started (GS1) built, awaiting the founder's review (2026-11-26, newest)
+## Code screen (GS2) built (2026-11-27, newest)
+- Founder approved GS1 ("okay for now") and asked for every next screen to be "really amazing … sexy … aesthetic for
+  Gen Z"; the canvas screens are references only ("make design very nice"). The canvas now holds the whole flow
+  (Code, About you, Consent, Health, Meds, ABHA, Connect, Notify, Enter, Home, Ask camera/location, Find); boards copied
+  to `docs/design/kalighat-pop/` one screen at a time as each is built (`G04Code/` now).
+- **Phone → code move:** a beat of "Code sent", then the page changes around a still toran, back button and "a"; the
+  number flies up from its field into a "+91 … · Change" pill. Back reverses it.
+- Six painted tiles (3 + 3) matching the number field; auto-check on the sixth digit; checking wave; verified: green
+  ripple, the "a" jumps for joy (new `celebrating` mood), marigold petals.
+- Real Supabase: `verifyOTP` signs in (session saved). Verified live on test number +91 90000 00002 (wrong code
+  rejected, right code signed in); the test accounts were deleted afterwards (0 users). The test code is passed at run
+  time (`--dart-define=TEST_CODE`), never committed.
+- Supabase can't tell wrong from expired: the app calls a rejected code older than 60 s expired. Our cap: 3 wrong tries
+  per code. Resend waits 1, 2, 3 minutes. "Didn't get it?" after 30 s.
+- The sent code survives closing the app for 10 minutes (`PendingCode` in the launch store; the router returns to
+  `/code` at launch, GI-29).
+- Not yet: Android SMS User Consent (needs a native plugin and a real phone); About you (GS3) after verifying; the code
+  life is 60 s in Supabase (suggest 5 minutes: an auth setting, needs the founder's yes).
+
+## Get started (GS1) built, awaiting the founder's review (2026-11-26)
 - Founder: the Get started board (Design canvas "ApneDoctors: Get started", copied to
   `docs/design/kalighat-pop/G03GetStarted/`) is **a reference only** ("it has lots of issues"); make every screen the
   best in the world, and design the flow from tapping a button to the next page. Welcome stays as it is ("amazing").
@@ -155,7 +174,8 @@ Last updated: 2026-11-26 (Get started built).
   what's approved. Ask before anything destructive, costly or hard to undo.
 
 ## Open questions for the founder
-- Approve Get started (GS1) and the walk through the doorway; then GS2 (the code screen).
+- Approve the code screen (GS2) and the phone → code move; then About you (GS3).
+- Raise the code life in Supabase from 60 s to 5 minutes (auth setting)?
 - Approve milestone 1 (videos in the session) and the six deliberate differences above.
 - Google sign-in keys (iOS client ID, web client ID, Android SHA-1/SHA-256): the founder sends them.
 - Real SMS for phone sign-in: a paid provider with DLT registration, only with the founder's yes.

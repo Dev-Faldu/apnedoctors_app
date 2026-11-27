@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:apnedoctors/core/config/env.dart';
+import 'package:apnedoctors/features/get_started/code_verifier.dart';
 import 'package:apnedoctors/features/get_started/phone_code_sender.dart';
 import 'package:apnedoctors/features/welcome/doctors_online.dart';
 import 'package:apnedoctors/shared/indian_phone.dart';
@@ -51,6 +52,21 @@ void main() {
     // a second run within a minute meets Supabase's own wait, which the screen shows as a countdown (GI-26)
     expect(result is CodeSent || result is SendWait, isTrue, reason: '$result');
   }, skip: !live);
+
+  // GS2 end to end on a Supabase test number: a real send, then the real check. The test number's fixed code is
+  // given at run time (--dart-define=TEST_CODE=...), never written in the repo.
+  const testCode = String.fromEnvironment('TEST_CODE');
+  test('GS2: the right code signs in; a wrong one is rejected (test number, no SMS)', () async {
+    final phone = parseIndianPhone('+91 90000 00002') as PhoneOk;
+    final sent = await SupabasePhoneCodeSender(client).send(phone);
+    expect(sent is CodeSent || sent is SendWait, isTrue, reason: '$sent');
+    final verifier = SupabaseCodeVerifier(client);
+    final wrong = testCode == '000000' ? '111111' : '000000';
+    expect(await verifier.verify(phone, wrong), isA<VerifyRejected>());
+    expect(await verifier.verify(phone, testCode), isA<Verified>());
+    expect(client.auth.currentSession, isNotNull);
+    await client.auth.signOut();
+  }, skip: !live || testCode.isEmpty);
 }
 
 /// The machine's own network: its proxy (HTTPS_PROXY) and any extra trusted certificate (SSL_CERT_FILE).

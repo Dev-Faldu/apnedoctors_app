@@ -210,3 +210,109 @@ class _ChevronPainter extends CustomPainter {
   @override
   bool shouldRepaint(_ChevronPainter old) => false;
 }
+
+/// A stroke icon drawn in a 24 × 24 box.
+class _Stroke24 extends CustomPainter {
+  const _Stroke24(this.path, this.color, {this.width = 2.2});
+  final Path Function() path;
+  final Color color;
+  final double width;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.scale(size.width / 24);
+    canvas.drawPath(
+      path(),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = width
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_Stroke24 old) => old.color != color;
+}
+
+/// A pencil: change this.
+class PencilMark extends StatelessWidget {
+  const PencilMark({super.key, this.size = 16, this.color = AdColors.vermilion});
+  final double size;
+  final Color color;
+
+  static Path _path() => Path()
+    ..moveTo(4, 20)
+    ..lineTo(4.6, 16.2)
+    ..lineTo(15.8, 5)
+    ..quadraticBezierTo(17.4, 3.4, 19, 5)
+    ..quadraticBezierTo(20.6, 6.6, 19, 8.2)
+    ..lineTo(7.8, 19.4)
+    ..close()
+    ..moveTo(14, 6.8)
+    ..lineTo(17.2, 10);
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: CustomPaint(size: Size.square(size), painter: _Stroke24(_path, color)),
+  );
+}
+
+/// Two arrows chasing round: send again.
+class RefreshMark extends StatelessWidget {
+  const RefreshMark({super.key, this.size = 22, this.color = AdColors.ink});
+  final double size;
+  final Color color;
+
+  static Path _path() => Path()
+    ..moveTo(19.5, 12)
+    ..arcToPoint(const Offset(6.4, 17.3), radius: const Radius.circular(7.5))
+    ..moveTo(4.5, 12)
+    ..arcToPoint(const Offset(17.6, 6.7), radius: const Radius.circular(7.5))
+    ..moveTo(17.8, 3.2)
+    ..lineTo(17.6, 6.7)
+    ..lineTo(14.1, 6.6)
+    ..moveTo(6.2, 20.8)
+    ..lineTo(6.4, 17.3)
+    ..lineTo(9.9, 17.4);
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: CustomPaint(size: Size.square(size), painter: _Stroke24(_path, color)),
+  );
+}
+
+/// A phone: check the number.
+class PhoneMark extends StatelessWidget {
+  const PhoneMark({super.key, this.size = 22, this.color = AdColors.ink});
+  final double size;
+  final Color color;
+
+  static Path _path() => Path()
+    ..addRRect(RRect.fromLTRBR(7, 2.5, 17, 21.5, const Radius.circular(3)))
+    ..moveTo(10.5, 18.2)
+    ..lineTo(13.5, 18.2);
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: CustomPaint(size: Size.square(size), painter: _Stroke24(_path, color)),
+  );
+}
+
+/// A small chevron pointing on (end of a row).
+class ChevronMark extends StatelessWidget {
+  const ChevronMark({super.key, this.size = 18, this.color = AdColors.muted});
+  final double size;
+  final Color color;
+
+  static Path _path() => Path()
+    ..moveTo(9, 5)
+    ..lineTo(16, 12)
+    ..lineTo(9, 19);
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: CustomPaint(size: Size.square(size), painter: _Stroke24(_path, color, width: 2.4)),
+  );
+}

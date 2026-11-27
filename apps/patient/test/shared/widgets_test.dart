@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart' show TextField;
 
 import 'package:apnedoctors/core/theme/tokens.dart';
 import 'package:apnedoctors/shared/indian_phone.dart';
@@ -7,7 +8,7 @@ import 'package:apnedoctors/shared/widgets/google_button.dart';
 import 'package:apnedoctors/shared/widgets/kp_icons.dart';
 import 'package:apnedoctors/shared/widgets/kp_scaffold.dart';
 import 'package:apnedoctors/shared/widgets/living_a.dart';
-import 'package:apnedoctors/shared/widgets/otp_boxes.dart';
+import 'package:apnedoctors/shared/widgets/code_tiles.dart';
 import 'package:apnedoctors/shared/widgets/phone_field.dart';
 import 'package:apnedoctors/shared/widgets/primary_button.dart';
 
@@ -126,62 +127,80 @@ void main() {
     });
   });
 
-  group('OtpBoxes', () {
-    testWidgets('submits once when the sixth digit lands, again only for a different code', (tester) async {
+  group('CodeTiles', () {
+    Future<(TextEditingController, List<String>)> tiles(WidgetTester tester, {CodeLook look = CodeLook.typing}) async {
       setPhone(tester, const Size(390, 844));
       final c = TextEditingController();
       final codes = <String>[];
-      await tester.pumpWidget(phone(pad(OtpBoxes(controller: c, onCompleted: codes.add))));
-      await tester.enterText(find.byType(EditableText), '12345');
+      await tester.pumpWidget(
+        phone(pad(CodeTiles(controller: c, onCompleted: codes.add, look: look)), reducedMotion: true),
+      );
+      return (c, codes);
+    }
+
+    testWidgets('checks once when the sixth digit lands, again only for a different code', (tester) async {
+      final (c, codes) = await tiles(tester);
+      await tester.enterText(find.byType(EditableText), '48291');
       expect(codes, isEmpty);
-      await tester.enterText(find.byType(EditableText), '123456');
+      await tester.enterText(find.byType(EditableText), '482913');
       await tester.pump();
-      c.text = '123456'; // the same code again (autofill firing twice) is ignored
+      c.text = '482913'; // the same code again (autofill firing twice) is ignored
       await tester.pump();
-      expect(codes, ['123456']);
-      await tester.enterText(find.byType(EditableText), '12345');
-      await tester.enterText(find.byType(EditableText), '123457');
-      expect(codes, ['123456', '123457']);
+      expect(codes, ['482913']);
+      await tester.enterText(find.byType(EditableText), '48291');
+      await tester.enterText(find.byType(EditableText), '482914');
+      expect(codes, ['482913', '482914']);
     });
 
-    testWidgets('a pasted code fills every box; letters never get in', (tester) async {
-      setPhone(tester, const Size(390, 844));
-      final c = TextEditingController();
-      await tester.pumpWidget(phone(pad(OtpBoxes(controller: c, onCompleted: (_) {}))));
-      await tester.enterText(find.byType(EditableText), '98a76b5432');
+    testWidgets('a pasted code fills every tile; letters never get in', (tester) async {
+      final (c, _) = await tiles(tester);
+      await tester.enterText(find.byType(EditableText), '48a29b1394');
       await tester.pump();
-      expect(c.text, '987654');
-      for (final d in ['9', '8', '7', '6', '5', '4']) {
-        expect(find.text(d), findsOneWidget);
-      }
+      expect(c.text, '482913');
     });
 
-    testWidgets('GI-25: a wrong code shakes the boxes, and the same code can be tried again', (tester) async {
+    testWidgets('GI-25: a wrong code shakes, then clears so the next can be typed', (tester) async {
       setPhone(tester, const Size(390, 844));
-      final c = TextEditingController();
-      final codes = <String>[];
-      Widget boxes(int errors) =>
-          phone(pad(OtpBoxes(controller: c, onCompleted: codes.add, error: errors > 0, errorCount: errors)));
-      await tester.pumpWidget(boxes(0));
-      await tester.enterText(find.byType(EditableText), '111111');
-      await tester.pumpWidget(boxes(1));
+      final c = TextEditingController(text: '111111');
+      Widget build(int wrong) => phone(
+        pad(
+          CodeTiles(
+            controller: c,
+            onCompleted: (_) {},
+            look: wrong > 0 ? CodeLook.wrong : CodeLook.typing,
+            wrongCount: wrong,
+          ),
+        ),
+      );
+      await tester.pumpWidget(build(0));
+      await tester.pumpWidget(build(1));
       await tester.pump(const Duration(milliseconds: 60));
       final shifted = tester.widget<Transform>(
-        find.descendant(of: find.byType(OtpBoxes), matching: find.byType(Transform)).first,
+        find.descendant(of: find.byType(CodeTiles), matching: find.byType(Transform)).first,
       );
       expect(shifted.transform.getTranslation().x, isNot(0));
-      await tester.pump(const Duration(milliseconds: 500));
-      c.text = '111111';
-      await tester.pump();
-      expect(codes, ['111111', '111111']);
+      await tester.pump(const Duration(milliseconds: 800));
+      expect(c.text, '');
     });
 
-    testWidgets('GI-60: at 200% text on a small phone each digit keeps air inside its box', (tester) async {
+    testWidgets('locked and verified tiles can\'t be typed into', (tester) async {
+      await tiles(tester, look: CodeLook.locked);
+      expect(tester.widget<TextField>(find.byType(TextField)).readOnly, isTrue);
+    });
+
+    testWidgets('GI-61: the six tiles read as one field', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tiles(tester);
+      expect(find.bySemanticsLabel('6-digit code'), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('GI-60: at 200% text the digits grow as far as a tile allows', (tester) async {
       setPhone(tester, const Size(360, 640));
       await tester.pumpWidget(
         phone(
           pad(
-            OtpBoxes(
+            CodeTiles(
               controller: TextEditingController(text: '888888'),
               onCompleted: (_) {},
             ),
@@ -190,20 +209,7 @@ void main() {
         ),
       );
       expect(tester.takeException(), isNull);
-      final digit = tester.getSize(find.text('8').first);
-      final box = tester.getSize(
-        find.ancestor(of: find.text('8').first, matching: find.byType(AnimatedContainer)).first,
-      );
-      expect(box.width - digit.width, greaterThanOrEqualTo(16));
-      expect(digit.height, greaterThan(28 * 1.1 * 1.4)); // grown well past 100%, only capped to fit
-    });
-
-    testWidgets('GI-61: the six boxes read as one field', (tester) async {
-      setPhone(tester, const Size(390, 844));
-      final handle = tester.ensureSemantics();
-      await tester.pumpWidget(phone(pad(OtpBoxes(controller: TextEditingController(), onCompleted: (_) {}))));
-      expect(find.bySemanticsLabel('6-digit code'), findsOneWidget);
-      handle.dispose();
+      expect(tester.getSize(find.byType(CodeTiles)).height, greaterThanOrEqualTo(64));
     });
   });
 

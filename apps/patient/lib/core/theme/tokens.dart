@@ -38,6 +38,8 @@ abstract final class AdColors {
   static const ring = Color(0x1FC8302B); // vermilion at 12%, around a focused or wrong field
   static const errorText = Color(0xFFA3221D); // deep vermilion: 6.6:1 on paper
   static const tick = Color(0xFF3F7F38); // "looks right": 4.9:1 against white
+  static const okFill = Color(0xFFEEF6EC); // a verified code's tiles
+  static const okText = Color(0xFF2F6A29); // on okFill: 5.9:1
 
   // avatar tints on the "doctors online" chip
   static const avatarIndigo = Color(0xFFDCE3F5);
@@ -126,6 +128,21 @@ abstract final class KpType {
 
   /// Digits of the phone number, each drawn in its own slot.
   static final digits = anek(size: 24, weight: 600, width: 104, height: 1.25);
+
+  /// A digit in a code tile.
+  static final codeDigit = anek(size: 30, weight: 800, width: 105, height: 1.15);
+
+  /// The number in the "sent to" pill.
+  static final pillNumber = anek(size: 17, weight: 700, height: 1.2);
+  static final pillAction = anek(size: 15, weight: 800, height: 1.2, color: AdColors.vermilion);
+
+  /// A row title in a choices card ("Send it again") and its quiet second line.
+  static final rowTitle = anek(size: 17, weight: 700, height: 1.25);
+  static final rowSub = anek(size: 14, height: 1.35, color: AdColors.muted);
+  static final cardTitle = anek(size: 15, weight: 800, height: 1.2);
+
+  /// A good outcome under a field ("Verified").
+  static final helpGood = anek(size: 16, weight: 700, height: 1.35, color: AdColors.okText);
 
   /// The line under a field: body size, so it reads as easily as the rest.
   static final help = anek(size: 16, height: 1.35, color: AdColors.muted);
